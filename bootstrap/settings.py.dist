@@ -1,0 +1,19 @@
+api = dict(
+    uri='http://localhost:9966/api/',
+    username='',
+    password=''
+)
+
+mail = dict(
+    mfrom='noreply@local.dev',
+    to='noreply@local.dev'
+)
+
+ldap = dict(
+    host='ldaps://',
+    port='389',
+    base_dn='',
+    user='',
+    password='',
+    page_size=1000
+)
