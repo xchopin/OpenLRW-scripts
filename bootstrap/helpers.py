@@ -35,11 +35,12 @@ class Colors:
 
 
 def pretty_error(reason, message):
-    length = 74
+    length = 80
     first_half_reason = ""
     second_half_reason = ""
     first_half_message = ""
     second_half_message = ""
+
     if length - len(reason) >= 0:
         number = length - len(reason)
         for i in xrange(0, number/2):
@@ -47,22 +48,39 @@ def pretty_error(reason, message):
         second_half_reason = first_half_reason
         if number % 2 != 0:
             second_half_reason = first_half_reason + " "
+    reason = first_half_reason + Colors.WARNING + reason + Colors.ENDC + second_half_reason
+    if isinstance(message, list):
+        message_line = ''
+        for i in range(0, len(message)):
+            msg = message[i]
+            if length - len(msg) >= 0:
+                number = length - len(msg)
+                for j in xrange(0, number / 2):
+                    first_half_message += " "
+                second_half_message = first_half_message
+                if number % 2 != 0:
+                    second_half_message = first_half_message + " "
+            message_line += "│" + first_half_message + msg + second_half_message + '│'
+            if i is not len(message)-1:
+                message_line += '\n'
+    else:
+        if length - len(message) >= 0:
+            number = length - len(message)
+            for i in xrange(0, number / 2):
+                first_half_message += " "
+            second_half_message = first_half_message
+            if number % 2 != 0:
+                second_half_message = first_half_message + " "
+        message_line = "│" + first_half_message + message + second_half_message + "│"
 
-    if length - len(message) >= 0:
-        number = length - len(message)
-        for i in xrange(0, number / 2):
-            first_half_message += " "
-        second_half_message = first_half_message
-        if number % 2 != 0:
-            second_half_message = first_half_message + " "
 
     print("""
-╭──────────────────────────────────────────────────────────────────────────╮ 
-│    OpenLRW  scripts    │             \033[31mERROR MESSAGE\033[0m                 ░▒▓▓▓▓│ 
-├──────────────────────────────────────────────────────────────────────────│ 
-│""" + first_half_reason + Colors.WARNING + reason + Colors.ENDC + second_half_reason + """│  
-│""" + first_half_message + message + second_half_message + """│  
-╰──────────────────────────────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────────────────────────────╮ 
+│      OpenLRW scripts      │               \033[31mERROR MESSAGE\033[0m                  ░▒▓▓▓▓│ 
+├────────────────────────────────────────────────────────────────────────────────│ 
+│""" + reason + """│  
+""" + message_line + """
+╰────────────────────────────────────────────────────────────────────────────────╯
         """)
     sys.exit(1)
 
