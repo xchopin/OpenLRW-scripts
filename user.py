@@ -59,6 +59,11 @@ def populate(check, jwt):
             pretty_error('Couldn\'t pull LDAP results', '%s' % e)
 
         for dn, attributes in rdata:
+
+            if 'businessCategory' not in attributes:
+                print attributes['uid'][0]
+                continue
+
             json = {
                 'sourcedId': attributes['uid'][0],
                 'givenName': attributes['displayName'][0],
