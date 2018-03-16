@@ -1,6 +1,13 @@
 #!/usr/bin/python
 # coding: utf-8
 
+__author__ = "Xavier Chopin"
+__copyright__ = "Copyright 2018, University of Lorraine"
+__license__ = "ECL-2.0"
+__version__ = "1.0.0"
+__email__ = "xavier.chopin@univ-lorraine.fr"
+__status__ = "Production"
+
 from distutils.version import LooseVersion
 
 import ldap
@@ -11,7 +18,6 @@ import smtplib
 import sys
 from ldap.controls import SimplePagedResultsControl
 
-logging.basicConfig(filename='log/user.log', level=logging.WARN)
 
 # Check if we're using the Python "ldap" 2.4 or greater API
 LDAP_24_API = LooseVersion(ldap.__version__) >= LooseVersion('2.4')
@@ -58,6 +64,7 @@ def pretty_error(reason, message):
 │""" + first_half_message + message + second_half_message + """│  
 ╰──────────────────────────────────────────────────────────────────────────╯
         """)
+    sys.exit(1)
 
 
 def generate_jwt():
