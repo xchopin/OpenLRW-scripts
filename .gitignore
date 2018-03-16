@@ -1,0 +1,5 @@
+*.pyc
+bootstrap/settings.py
+!bootstrap/settings.py.dist
+log/*
+!log/.gitkeep
