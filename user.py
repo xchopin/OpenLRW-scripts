@@ -8,10 +8,13 @@ __version__ = "1.0.0"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-
 import requests, json
 from bootstrap.helpers import *
 from bootstrap import settings
+
+
+logging.basicConfig(filename='log/user.log', level=logging.WARN)
+
 
 # -------------- GLOBAL --------------
 BASEDN = settings.ldap['base_dn']
@@ -45,18 +48,15 @@ def populate(check, jwt):
     controls = create_ldap_controls(settings.ldap['page_size'])
     while 1 < 2:  # hi deadmau5
         try:
-            # You may want to adjust the scope level as well
-            # (perhaps "ldap.SCOPE_SUBTREE", but it can reduce performance if you don't need it).
+            # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
             users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, 'uid=*', ATTRLIST, serverctrls=[controls])
         except ldap.LDAPError as e:
             pretty_error('LDAP search failed', '%s' % e)
-            sys.exit(1)
 
         try:
             rtype, rdata, ruser, server_ctrls = l.result3(users)  # Pull the results from the search request
         except ldap.LDAPError as e:
             pretty_error('Couldn\'t pull LDAP results', '%s' % e)
-            sys.exit(1)
 
         for dn, attributes in rdata:
             json = {
@@ -80,11 +80,10 @@ def populate(check, jwt):
         cookie = set_ldap_cookie(controls, pctrls, settings.ldap['page_size'])
         if not cookie:
             break
-
     l.unbind()
-# --------------------------------------
 
 
+# -------------- MAIN --------------
 # Checking args
 if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):
     pretty_error(
@@ -92,7 +91,7 @@ if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update
         " - `reset`: drops the mongoUser collection then imports users without checking duplicates \n"
         " - `update`: imports new users"
     )
-    sys.exit(1)
+
 
 try:
     ldap.set_option(ldap.OPT_REFERRALS, 0)   # Don't follow referrals
@@ -102,13 +101,11 @@ try:
     l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
 except ldap.LDAPError, e:
     pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
-    sys.exit(1)
 
 try:
     l.simple_bind_s(settings.ldap['user'], settings.ldap['password'])
 except ldap.LDAPError as e:
     pretty_error('LDAP bind failed', '%s' % e)
-    sys.exit(1)
 
 jwt = generate_jwt()
 
@@ -125,10 +122,5 @@ if sys.argv[1] == 'reset':  # Deletes evey users and inserts them
     populate(False, jwt)
 elif sys.argv[1] == 'update':
     populate(True, jwt)
-    sys.exit(0)
 
-
-
-
-
-
+sys.exit(0)
