@@ -88,10 +88,8 @@ def populate(check, jwt):
 if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):
     pretty_error(
         "Wrong usage",
-        " - `reset`: drops the mongoUser collection then imports users without checking duplicates \n"
-        " - `update`: imports new users"
+        ["reset: clears the user collection then imports them without checking duplicates", "update: imports new users"]
     )
-
 
 try:
     ldap.set_option(ldap.OPT_REFERRALS, 0)   # Don't follow referrals
