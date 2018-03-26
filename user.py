@@ -89,8 +89,7 @@ def populate(check, jwt):
 
 
 # -------------- MAIN --------------
-# Checking args
-if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):
+if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):  # Checking args
     pretty_error(
         "Wrong usage",
         ["reset: clears the user collection then imports them without checking duplicates", "update: imports new users"]
