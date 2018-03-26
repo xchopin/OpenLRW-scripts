@@ -25,7 +25,7 @@ ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
 def post_user(jwt, data, check):
     check = 'false' if check is False else 'true'
     response = requests.post(settings.api['uri'] + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    return response.status_code == 401  # if token expired
+    return response.status_code != 401  # if token expired
 
 
 def get_users(jwt):
@@ -35,7 +35,7 @@ def get_users(jwt):
 
 def delete_user(jwt, user_id):
     response = requests.delete(settings.api['uri'] + '/users/' + user_id, headers={'Authorization': 'Bearer ' + jwt})
-    return response.status_code == 401  # if token expired
+    return response.status_code != 401  # if token expired
 
 
 def populate(check, jwt):
