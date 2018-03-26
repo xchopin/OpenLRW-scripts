@@ -9,6 +9,11 @@ mail = dict(
     to='noreply@local.dev'
 )
 
+logstash = dict(
+    host='localhost',
+    port=9977
+)
+
 ldap = dict(
     host='ldaps://',
     port='389',
