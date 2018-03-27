@@ -4,7 +4,7 @@
 ## Requirements
  - [OpenLRW](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW)
  - [Python](https://www.python.org/downloads/)
- - [ldap-python](#get-ldap-python-library)
+ - [python-ldap](#get-python-ldap-library)
  - [OpenLDAP](https://stackoverflow.com/a/4768467/7644126)
 
 ## Sources used to import data
@@ -13,12 +13,12 @@
 
 
 ## Tips
-### Get ldap-python library
+### Get python-ldap library
 > To get this library you will need to have [PIP package manager](https://pypi.python.org/pypi/pip)
 
 #### Download and install PIP
    `$ wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py ; python /tmp/get-pip.py`
 
-#### Install ldap-python
-   `$ pip install ldap-python`
+#### Install python-ldap
+   `$ pip install python-ldap` 
     
