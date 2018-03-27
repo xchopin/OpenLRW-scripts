@@ -15,10 +15,26 @@ import requests, json
 from bootstrap.helpers import *
 from bootstrap import settings
 
+# -------------- GLOBAL --------------
+HOST = settings.logstash['host']
+PORT = settings.logstash['port']
 
-HOST, PORT = settings.logstash['host'], settings.logstash['port']
+
+# -------------- FUNCTIONS --------------
+def post_event(jwt, data):
+    response = requests.post(settings.api['uri'] + '/events', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    return response.status_code != 401  # if token expired
 
 
+def parse_json_stream(stream):
+    decoder = json.JSONDecoder()
+    while stream:
+        obj, idx = decoder.raw_decode(stream)
+        yield obj
+        stream = stream[idx:].lstrip()
+
+
+# -------------- TCP SERVER --------------
 class SingleTCPHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         while True:
@@ -26,7 +42,7 @@ class SingleTCPHandler(SocketServer.BaseRequestHandler):
                 data = self.request.recv(1024)  # 1Kb input
             except SocketError as e:
                 if e.errno != errno.ECONNRESET:
-                    raise  # Not error we are looking for
+                    raise
                 break
             if data == '':
                 self.request.close()
@@ -44,6 +60,7 @@ class SimpleServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
         SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass)
 
 
+# -------------- MAIN --------------
 if __name__ == "__main__":
     server = SimpleServer((HOST, PORT), SingleTCPHandler)
     pretty_message('Starting TCP Server on ' + HOST + ':' + str(PORT), 'Listener enabled, waiting for Logstash events')
@@ -51,5 +68,3 @@ if __name__ == "__main__":
         server.serve_forever()
     except KeyboardInterrupt:
         sys.exit(0)
-
-
