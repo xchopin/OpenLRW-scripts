@@ -10,31 +10,29 @@ __status__ = "Production"
 
 import requests, json
 from bootstrap.helpers import *
-from bootstrap import settings
-
 
 logging.basicConfig(filename='log/user.log', level=logging.WARN)
 
-
 # -------------- GLOBAL --------------
-BASEDN = settings.ldap['base_dn']
+BASEDN = SETTINGS['ldap']['base_dn']
+URI = SETTINGS['api']['uri'] + '/api/'
 ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
 
 
 # -------------- FUNCTIONS --------------
 def post_user(jwt, data, check):
     check = 'false' if check is False else 'true'
-    response = requests.post(settings.api['uri'] + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    response = requests.post(URI + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
     return response.status_code != 401  # if token expired
 
 
 def get_users(jwt):
-    response = requests.get(settings.api['uri'] + '/users', headers={'Authorization': 'Bearer ' + jwt})
+    response = requests.get(URI + '/users', headers={'Authorization': 'Bearer ' + jwt})
     return False if response.status_code == 401 else response.content  # if token expired
 
 
 def delete_user(jwt, user_id):
-    response = requests.delete(settings.api['uri'] + '/users/' + user_id, headers={'Authorization': 'Bearer ' + jwt})
+    response = requests.delete(URI + '/users/' + user_id, headers={'Authorization': 'Bearer ' + jwt})
     return response.status_code != 401  # if token expired
 
 
@@ -45,7 +43,7 @@ def populate(check, jwt):
     :param jwt: JSON Web Token for OpenLRW
     :return: void
     """
-    controls = create_ldap_controls(settings.ldap['page_size'])
+    controls = create_ldap_controls(SETTINGS['ldap']['page_size'])
     while 1 < 2:  # hi deadmau5
         try:
             # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
@@ -82,7 +80,7 @@ def populate(check, jwt):
             print >> sys.stderr, 'Warning: Server ignores RFC 2696 control.'
             break
 
-        cookie = set_ldap_cookie(controls, pctrls, settings.ldap['page_size'])
+        cookie = set_ldap_cookie(controls, pctrls, SETTINGS['ldap']['page_size'])
         if not cookie:
             break
     l.unbind()
@@ -99,13 +97,13 @@ try:
     ldap.set_option(ldap.OPT_REFERRALS, 0)   # Don't follow referrals
     # Ignores server side certificate errors (assumes using LDAPS and self-signed cert).
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
-    l = ldap.initialize(settings.ldap['host'] + ':' + settings.ldap['port'])
+    l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
     l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
 except ldap.LDAPError, e:
     pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
 
 try:
-    l.simple_bind_s(settings.ldap['user'], settings.ldap['password'])
+    l.simple_bind_s(SETTINGS['ldap']['user'], SETTINGS['ldap']['password'])
 except ldap.LDAPError as e:
     pretty_error('LDAP bind failed', '%s' % e)
 

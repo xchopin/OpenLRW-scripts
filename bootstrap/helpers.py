@@ -13,7 +13,7 @@ from distutils.version import LooseVersion
 import ldap
 import logging
 import requests
-import settings
+import yaml
 import smtplib
 import sys
 from ldap.controls import SimplePagedResultsControl
@@ -21,6 +21,9 @@ from ldap.controls import SimplePagedResultsControl
 
 # Check if we're using the Python "ldap" 2.4 or greater API
 LDAP_24_API = LooseVersion(ldap.__version__) >= LooseVersion('2.4')
+
+with open("bootstrap/settings.yml", 'r') as dot_yml:
+    SETTINGS = yaml.load(dot_yml)
 
 
 class Colors:
@@ -134,9 +137,9 @@ def pretty_message(reason, message):
 
 
 def generate_jwt():
-    url = settings.api['uri'] + "/auth/login"
+    url = SETTINGS['api']['uri'] + "/api/auth/login"
     headers = {'X-Requested-With': 'XMLHttpRequest'}
-    data = {"username": settings.api['username'], "password": settings.api['password']}
+    data = {"username": SETTINGS['api']['username'], "password": SETTINGS['api']['password']}
 
     try:
         r = requests.post(url, headers=headers, json=data)
@@ -144,13 +147,13 @@ def generate_jwt():
         return res['token']
     except:
         mail = smtplib.SMTP('localhost')
-        mail.sendmail(settings.mail['mfrom'], settings.mail['to'],
+        mail.sendmail(SETTINGS['mail']['from'], SETTINGS['mail']['to'],
                       "Subject: Recuperation du JWT impossible \n\n Le script " +
                       sys.argv[0] + " ne peut pas récupérer un token auprès d'OpenLRW")
         sys.exit('Impossible de récupérer le JWT ')
 
 
-def create_ldap_controls(page_size=settings.ldap['page_size']):
+def create_ldap_controls(page_size=SETTINGS['ldap']['page_size']):
     """Creates an LDAP control with a page size of "pagesize"."""
     # Initialize the LDAP controls for paging.
     # Note that we pass '' for the cookie because on first iteration, it starts out empty.
@@ -170,7 +173,7 @@ def get_ldap_controls(serverctrls):
         return [c for c in serverctrls if c.controlType == ldap.LDAP_CONTROL_PAGE_OID]
 
 
-def set_ldap_cookie(lc_object, pctrls, pagesize=settings.ldap['page_size']):
+def set_ldap_cookie(lc_object, pctrls, pagesize=SETTINGS['ldap']['page_size']):
     """Pushes the latest cookie back into the page control."""
     if LDAP_24_API:
         cookie = pctrls[0].cookie
