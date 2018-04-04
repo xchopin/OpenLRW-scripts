@@ -1,0 +1,16 @@
+api:
+  uri: "http://localhost:9966"
+  username: ""
+  password: ""
+
+ldap:
+  host: "ldaps://"
+  port: "389"
+  user: ""
+  password: ""
+  base_dn: ""
+  page_size: 1000
+
+email:
+  from: "scripts@openlrw.dev"
+  to: "scripts@openlrw.dev"
