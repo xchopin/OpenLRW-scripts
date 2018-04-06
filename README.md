@@ -1,5 +1,6 @@
 # OpenLRW scripts
-> These scripts are used to populate the Apero OpenLRW API by using different sources 
+
+OpenLRW-scripts is a repository where you can find scripts to populate the Apero OpenLRW API by using different sources. These scripts are used at the [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) and are open-source.
 
 ## I. Requirements
  - [OpenLRW](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW)
@@ -39,7 +40,7 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
  
 
 ## IV. Usage
-### A. Add users to the mongoUser collection:
+### A. Add users to the mongoUser collection
  > This script will import the users by using the LDAP database and the CSV files; there are 2 arguments possible
 
 - #### 1. Populate the collection
@@ -59,3 +60,6 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
 ```bash
 $ cat /logs/cas_auth.log | /opt/logstash/bin/logstash --quiet -w10 -f xapi_cas.conf
 ```  
+
+## V. License
+OpenLRW-scripts is made available under the terms of the [Educational Community License, Version 2.0 (ECL-2.0)](https://opensource.org/licenses/ECL-2.0).
