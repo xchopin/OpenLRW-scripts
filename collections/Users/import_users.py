@@ -4,14 +4,16 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2018, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
 import requests, json
+import sys, os
+sys.path.append(os.path.dirname(__file__) + '/../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(filename='log/user.log', level=logging.WARN)
+logging.basicConfig(filename=os.path.dirname(__file__) + '/../../logs/users.log', level=logging.DEBUG)
 
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']

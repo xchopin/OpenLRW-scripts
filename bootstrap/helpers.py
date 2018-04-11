@@ -16,13 +16,14 @@ import requests
 import yaml
 import smtplib
 import sys
+import os
 from ldap.controls import SimplePagedResultsControl
 
 
 # Check if we're using the Python "ldap" 2.4 or greater API
 LDAP_24_API = LooseVersion(ldap.__version__) >= LooseVersion('2.4')
 
-with open("bootstrap/settings.yml", 'r') as dot_yml:
+with open(os.path.dirname(__file__) + "/settings.yml", 'r') as dot_yml:
     SETTINGS = yaml.load(dot_yml)
 
 

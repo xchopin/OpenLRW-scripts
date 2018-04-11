@@ -1,6 +1,6 @@
 *.pyc
 bootstrap/settings.yml
 !bootstrap/settings.yml.dist
-log/*
-!log/.gitkeep
+logs/*
+!logs/.gitkeep
 .idea/*
