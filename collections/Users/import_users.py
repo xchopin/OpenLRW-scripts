@@ -25,21 +25,21 @@ ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
 def post_user(jwt, data, check):
     check = 'false' if check is False else 'true'
     response = requests.post(URI + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print 'POST /users - Response: ' + str(response.status_code)
+    print Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
     logging.info('POST /users - Response: ' + str(response.status_code))
     return response.status_code != 401  # if token expired
 
 
 def get_users(jwt):
     response = requests.get(URI + '/users', headers={'Authorization': 'Bearer ' + jwt})
-    print 'GET /users - Response: ' + str(response.status_code)
-    logging.info('POST /users - Response: ' + str(response.status_code))
+    print Colors.OKGREEN + '[GET]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
+    logging.info('GET /users - Response: ' + str(response.status_code))
     return False if response.status_code == 401 else response.content  # if token expired
 
 
 def delete_user(jwt, user_id):
     response = requests.delete(URI + '/users/' + user_id, headers={'Authorization': 'Bearer ' + jwt})
-    print 'DELETE /users/' + user_id + ' - Response: ' + str(response.status_code)
+    print Colors.FAIL + '[DELETE]' + Colors.ENDC + ' /users/' + user_id + ' - Response: ' + str(response.status_code)
     return response.status_code != 401  # if token expired
 
 
