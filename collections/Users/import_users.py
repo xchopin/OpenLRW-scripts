@@ -26,14 +26,12 @@ def post_user(jwt, data, check):
     check = 'false' if check is False else 'true'
     response = requests.post(URI + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
     print Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
-    logging.info('POST /users - Response: ' + str(response.status_code))
     return response.status_code != 401  # if token expired
 
 
 def get_users(jwt):
     response = requests.get(URI + '/users', headers={'Authorization': 'Bearer ' + jwt})
     print Colors.OKGREEN + '[GET]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
-    logging.info('GET /users - Response: ' + str(response.status_code))
     return False if response.status_code == 401 else response.content  # if token expired
 
 
