@@ -148,7 +148,7 @@ def generate_jwt():
         return res['token']
     except:
         mail = smtplib.SMTP('localhost')
-        mail.sendmail(SETTINGS['mail']['from'], SETTINGS['mail']['to'],
+        mail.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
                       "Subject: Recuperation du JWT impossible \n\n Le script " +
                       sys.argv[0] + " ne peut pas récupérer un token auprès d'OpenLRW")
         sys.exit('Impossible de récupérer le JWT ')
