@@ -7,7 +7,7 @@
 #version        :0.1
 #usage          :sh cas_authentications.sh
 #notes          :This script is provided with the OpenLRW-scripts bundle therefore it requires Logstash > 2.4
-#notes          :In this script log files are located in /data/logs/YEARMONTHDAY and files are compressed in .gz, log files are created by the AGIMUS project
+#notes          :In this script log files are located in /data/logs/YEARMONTHDAY and files are compressed in .gz, log files are created by CAS Applications
 #bash_version   :4.2.46(2)-release
 #==============================================================================
 LAST_DATE=$(date +%Y%m%d -d "yesterday")
