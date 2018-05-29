@@ -57,12 +57,12 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
 ### B. Add CAS authentications to the mongoEvent collection
  > This script will import the "logged-in" events (students only)  by using log files
  
-#### For one log file
+- #### 1. For one log file
 ```bash
 $ cat /logs/cas_auth.log | /opt/logstash/bin/logstash --quiet -w10 -f xapi_cas.conf
 ```  
 
-#### Treating a plenty of log files
+- #### 2. Treating a plenty of log files (from a date to YESTERDAY)
 ```bash
 $ cd collections/Events/
 $ sh cas_authentications.sh
