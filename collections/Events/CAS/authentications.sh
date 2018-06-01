@@ -1,11 +1,11 @@
 #!/bin/bash
-#title          :cas_authentications.sh
+#title          :authentications.sh
 #license        :ECL-2.0
 #description    :This script will populate the mongodb Events collection by parsing all the log files from the date you enter to yesterday
 #author         :Xavier Chopin <xavier.chopin@univ-lorraine.fr>
 #date           :20180419
 #version        :0.1
-#usage          :sh cas_authentications.sh
+#usage          :sh authentications.sh
 #notes          :This script is provided with the OpenLRW-scripts bundle therefore it requires Logstash > 2.4
 #notes          :In this script log files are located in /data/logs/YEARMONTHDAY and files are compressed in .gz, log files are created by CAS Applications
 #bash_version   :4.2.46(2)-release
