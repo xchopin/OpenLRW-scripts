@@ -15,7 +15,7 @@ LAST_DATE=$(date +%Y%m%d -d "yesterday")
 echo "╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮"
 echo -e "│  OpenLRW Scripts  │  This script will loop on every log files from the \e[36mdate you will enter \e[39mto \e[36m$LAST_DATE \e[39m  │"
 echo "│__________________________________________________________________________________________________________│"
-echo -e "│                           Please enter the first date to parse (YEARMONTHDAY)                            │"
+echo -e "│                           Please enter the first date to parse (\e[92mYEAR\e[36mMONTH\e[39mDAY)                            │"
 echo "╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯"
 echo -en "First Date: \e[92m"
 read FIRST_DATE
@@ -33,7 +33,7 @@ if [ -d "/data/logs/${FIRST_DATE}" ]; then
             CURSOR=$(date +%Y%m%d -d "$CURSOR + 1 day")
      done
      echo "Sending data to Logstash script..."
-     zcat $FILES | /opt/logstash/bin/logstash --quiet -w30 -f cas_authentications.conf
+     zcat $FILES | /opt/logstash/bin/logstash --quiet -w30 -f authentication.conf
 else
 	echo -e "\e[31mError: This folder does not exist\e[39m"
 fi
