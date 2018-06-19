@@ -8,12 +8,20 @@ __version__ = "1.0.0"
 __email__ = "benjamin.seclier@univ-lorraine.fr, xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-import MySQLdb, datetime, sys, os , requests
+import MySQLdb
+import datetime
+import sys
+import os
+import requests
+import re
+
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
 
 # -------------- GLOBAL --------------
+
+TIMESTAMP_REGEX = r'(2[0-3]|[01][0-9]|[0-9]):([0-5][0-9]|[0-9]):([0-5][0-9]|[0-9])'
 
 DB_LOG_HOST = SETTINGS['db_moodle_log']['host']
 DB_LOG_NAME = SETTINGS['db_moodle_log']['name']
@@ -93,8 +101,16 @@ for course in courses:
 
 # -------------- MAIN --------------
 
+if not (len(sys.argv) > 0 and (re.match(TIMESTAMP_REGEX, sys.argv[1] == True) or re.match(TIMESTAMP_REGEX, sys.argv[2]))):  # Checking args
+    pretty_error(
+        "Wrong usage",
+        ["Minimum: 1 arg - Maximum: 2 args", "Arguments must be timestamps"]
+    )
+
 # Query for a day | Requête pour une journée
-query_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log LIMIT 10;")
+query_log.execute("SELECT userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated "
+                  "FROM arche_prod_log.logstore_standard_log "
+                  "LIMIT 10;")
 # cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where component='mod_quiz' and action='submitted' LIMIT 50;")
 # cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where eventname like '%assessable_submitted' LIMIT 30;")
 # cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where eventname like '%course_module_viewed' LIMIT 30;")
@@ -151,9 +167,8 @@ for row_log in rows_log:
                 "sendTime": datetime.datetime.now().isoformat(),
                 "sensor": "http://scripts/collections/Events/Moodle"
             }
-            print(json)
-            print("---------")
-            print(send_caliper_statement(json))
+
+            send_caliper_statement(json)
 
         # Visualisation d'un module de cours
         elif row["target"] == "course_module" and row["action"] == "viewed":
@@ -184,9 +199,8 @@ for row_log in rows_log:
                 "sendTime": datetime.datetime.now().isoformat(),
                 "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
-            print (json)
-            print ("---------")
-            print (send_caliper_statement(json))
+
+            send_caliper_statement(json)
 
         # Dépôt d'un devoir
         elif row["eventName"] == "\mod_assign\event\\assessable_submitted":
@@ -216,9 +230,8 @@ for row_log in rows_log:
                 "sendTime": datetime.datetime.now().isoformat(),
                 "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
-            print(json)
-            print("---------")
-            print(send_caliper_statement(json))
+
+            send_caliper_statement(json)
 
         # Soumission d'un test (quiz)
         elif row["component"] == "mod_quiz" and row["action"] == "submitted":
@@ -248,9 +261,8 @@ for row_log in rows_log:
                 "sendTime": datetime.datetime.now().isoformat(),
                 "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
-            print(json)
-            print("---------")
-            print(send_caliper_statement(json))
+
+            send_caliper_statement(json)
         else:
             print("Autre : " + moodle_users[row["userId"]] + " " + row["action"] + " " + row["target"] + " " + str(row["timeCreated"]))
 
