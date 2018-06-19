@@ -199,6 +199,7 @@ def send_xapi_statement(statement):
     """
     credentials = base64.b64encode(API_USERNAME +':'+ API_PASSWORD)
     response = requests.post(API_URI + "/xAPI/statements", headers={"Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}, json=statement)
+    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /xAPI/statements - Response: ' + str(response.status_code))
     return response.status_code == 200
 
 
@@ -209,4 +210,5 @@ def send_caliper_statement(statement):
     :return: HTTP Status
     """
     response = requests.post(API_URI + "/key/caliper", headers={"Authorization": API_USERNAME}, json=statement)
+    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /key/caliper - Response: ' + str(response.status_code))
     return response.status_code == 200
