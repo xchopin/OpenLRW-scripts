@@ -105,7 +105,7 @@ try:
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
     l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
-except ldap.LDAPError, e:
+except ldap.LDAPError as e:
     pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
 
 try:
