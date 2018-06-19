@@ -23,13 +23,13 @@ DB_LOG_NAME = SETTINGS['db_moodle_log']['name']
 DB_LOG_USERNAME = SETTINGS['db_moodle_log']['username']
 DB_LOG_PASSWORD = SETTINGS['db_moodle_log']['password']
 
-DB_PROD_HOST = SETTINGS['db_moodle']['host']
-DB_PROD_NAME = SETTINGS['db_moodle']['name']
-DB_PROD_USERNAME = SETTINGS['db_moodle']['username']
-DB_PROD_PASSWORD = SETTINGS['db_moodle']['password']
+DB_HOST = SETTINGS['db_moodle']['host']
+DB_NAME = SETTINGS['db_moodle']['name']
+DB_USERNAME = SETTINGS['db_moodle']['username']
+DB_PASSWORD = SETTINGS['db_moodle']['password']
 
 # -------------- DATABASES --------------
-db = MySQLdb.connect(DB_PROD_HOST, DB_PROD_USERNAME, DB_PROD_PASSWORD, DB_PROD_NAME)
+db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 db_log = MySQLdb.connect(DB_LOG_HOST, DB_LOG_USERNAME, DB_LOG_PASSWORD, DB_LOG_NAME)
 
 query = db.cursor()
@@ -79,7 +79,7 @@ def send_xapi_statement(statement):
     """
     credentials = base64.b64encode(API_USERNAME +':'+ API_PASSWORD)
     url = API_URI + "/xAPI/statements"
-    headers = { "Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}
+    headers = {"Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}
     r = requests.post(url, headers=headers, json=statement)
     return r.text
 
