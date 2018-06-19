@@ -1,264 +1,281 @@
 #!/usr/bin/python
 # coding: utf-8
 
+__author__ = "Benjamin Seclier, Xavier Chopin"
+__copyright__ = "Copyright 2018, University of Lorraine"
+__license__ = "ECL-2.0"
+__version__ = "1.0.0"
+__email__ = "benjamin.seclier@univ-lorraine.fr, xavier.chopin@univ-lorraine.fr"
+__status__ = "Production"
+
 import MySQLdb, datetime, sys, os, base64, requests
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-# -------- Fonctions -------- #
 
-#Récupère le nom d'un module (fichier, test, url, etc.) selon son id
-def getNomModuleFromId(type_module,id_module):
-  db_lib = MySQLdb.connect(SETTINGS['db_arche_prod']['host'], SETTINGS['db_arche_prod']['user'], SETTINGS['db_arche_prod']['pass'], SETTINGS['db_arche_prod']['db'])
-  cursor_lib = db_lib.cursor()
-  cursor_lib.execute("SELECT name FROM mdl_"+type_module+" WHERE id = '"+str(id_module)+"';")
-  res=cursor_lib.fetchone()
-  return res[0]
-  db_lib.close()
+# -------------- GLOBAL --------------
+API_URI = SETTINGS['api']['uri'] + '/api/'
+API_USERNAME = SETTINGS['api']['username']
+API_PASSWORD = SETTINGS['api']['password']
 
-#Récupère le nom du devoir selon son id
-def getNomDevoirFromId(id_devoir):
-  db_lib = MySQLdb.connect(SETTINGS['db_arche_prod']['host'], SETTINGS['db_arche_prod']['user'], SETTINGS['db_arche_prod']['pass'], SETTINGS['db_arche_prod']['db'])
-  cursor_lib = db_lib.cursor()
-  cursor_lib.execute("SELECT name FROM arche_prod.mdl_assign,arche_prod.mdl_assign_submission WHERE arche_prod.mdl_assign_submission.assignment = arche_prod.mdl_assign.id AND arche_prod.mdl_assign_submission.id="+str(id_devoir)+";")
-  res=cursor_lib.fetchone()
-  return res[0]
-  db_lib.close()
+DB_LOG_HOST = SETTINGS['db_moodle_log']['host']
+DB_LOG_NAME = SETTINGS['db_moodle_log']['name']
+DB_LOG_USERNAME = SETTINGS['db_moodle_log']['username']
+DB_LOG_PASSWORD = SETTINGS['db_moodle_log']['password']
 
-#Récupère le nom du test selon l'id de la tentative
-def getNomQuizFromId(id_quiz):
-  db_lib = MySQLdb.connect(SETTINGS['db_arche_prod']['host'], SETTINGS['db_arche_prod']['user'], SETTINGS['db_arche_prod']['pass'], SETTINGS['db_arche_prod']['db'])
-  cursor_lib = db_lib.cursor()
-  cursor_lib.execute("SELECT name FROM arche_prod.mdl_quiz,arche_prod.mdl_quiz_attempts WHERE arche_prod.mdl_quiz.id = arche_prod.mdl_quiz_attempts.quiz AND arche_prod.mdl_quiz_attempts.id="+str(id_quiz)+";")
-  res=cursor_lib.fetchone()
-  return res[0]
-  db_lib.close()
+DB_PROD_HOST = SETTINGS['db_moodle']['host']
+DB_PROD_NAME = SETTINGS['db_moodle']['name']
+DB_PROD_USERNAME = SETTINGS['db_moodle']['username']
+DB_PROD_PASSWORD = SETTINGS['db_moodle']['password']
 
-def sendXapiStatement(statement):
-  credentials = base64.b64encode(SETTINGS['api']['username'] +':'+ SETTINGS['api']['password'])
-  url = SETTINGS['api']['uri'] + "/xAPI/statements"
-  headers = {
-    "Authorization": "Basic "+ credentials,
-    "X-Experience-API-Version": "1.0.0"
-    }
-  r = requests.post(url, headers=headers, json=statement)
-  return r.text
+# -------------- DATABASES --------------
+db = MySQLdb.connect(DB_PROD_HOST, DB_PROD_USERNAME, DB_PROD_PASSWORD, DB_PROD_NAME)
+db_log = MySQLdb.connect(DB_LOG_HOST, DB_LOG_USERNAME, DB_LOG_PASSWORD, DB_LOG_NAME)
 
-def sendCaliperStatement(statement):
-  url = SETTINGS['api']['uri'] + "/key/caliper"
-  headers = {
-    "Authorization": SETTINGS['api']['username']
-    }
-  r = requests.post(url, headers=headers, json=statement)
-  return r.text
+query = db.cursor()
+query_log = db_log.cursor()
 
 
+# -------------- FUNCTIONS --------------
+def get_module_name(type, id):
+    """
+    Récupère le nom d'un module (fichier, test, url, etc.) pour un type et id donné
+    :param type:  module type
+    :param id:  module id
+    :return: module name
+    """
+    query.execute("SELECT name FROM mdl_" + type + " WHERE id = '" + str(id) + "';")
+    res = query.fetchone()
+    return res[0]
 
-# -------- Connexions DB -------- #
 
-#Connexion DB arche
-db = MySQLdb.connect(SETTINGS['db_arche_prod']['host'], SETTINGS['db_arche_prod']['user'], SETTINGS['db_arche_prod']['pass'], SETTINGS['db_arche_prod']['db'])
-cursor = db.cursor()
+def get_assignment_name(id):
+    """
+    Récupère le nom d'un devoir pour un id donné
+    :param id: assignment id
+    :return: assignment name
+    """
+    query.execute("SELECT name FROM arche_prod.mdl_assign,arche_prod.mdl_assign_submission WHERE arche_prod.mdl_assign_submission.assignment = arche_prod.mdl_assign.id AND arche_prod.mdl_assign_submission.id="+str(id)+";")
+    res = query.fetchone()
+    return res[0]
 
-#Connexion DB logs
-db_log = MySQLdb.connect(SETTINGS['db_arche_prod_log']['host'], SETTINGS['db_arche_prod_log']['user'], SETTINGS['db_arche_prod_log']['pass'], SETTINGS['db_arche_prod_log']['db'])
-cursor_log = db_log.cursor()
+
+def get_quiz_name(id):
+    """
+    Récupère le nom du test selon l'id de la tentative
+    :param id: quiz id
+    :return: quiz name
+    """
+    query.execute("SELECT name FROM arche_prod.mdl_quiz,arche_prod.mdl_quiz_attempts WHERE arche_prod.mdl_quiz.id = arche_prod.mdl_quiz_attempts.quiz AND arche_prod.mdl_quiz_attempts.id="+str(id)+";")
+    res = query.fetchone()
+    return res[0]
 
 
+def send_xapi_statement(statement):
+    """
+    Helper function to send xAPI statements
+    :param statement: JSON Object following the xAPI format
+    :return: HTTP Status
+    """
+    credentials = base64.b64encode(API_USERNAME +':'+ API_PASSWORD)
+    url = API_URI + "/xAPI/statements"
+    headers = { "Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}
+    r = requests.post(url, headers=headers, json=statement)
+    return r.text
 
-# -------- Dictionnaires de correspondance -------- #
 
-#Création d'un dictionnaire avec les id moodle et les logins UL
+def send_caliper_statement(statement):
+    """
+    Helper function to send Caliper IMS statement
+    :param statement:
+    :return: HTTP Status
+    """
+    url = SETTINGS['api']['uri'] + "/key/caliper"
+    headers = {"Authorization": API_USERNAME}
+    r = requests.post(url, headers=headers, json=statement)
+    return r.text
+
+
+# Création d'un dictionnaire avec les id moodle et les logins UL
 # {32L: 'giretti1u', 33L: 'ostiatti1u', 34L: 'pallucca1u', 35L: 'thiery27u', 24L: 'riviere8u'}
 #  moodle_users[32] => giretti1u
-cursor.execute("SELECT id,username FROM arche_prod.mdl_user WHERE deleted=0 AND username LIKE '%u';")
-rows_users = cursor.fetchall()
+query.execute("SELECT id, username FROM arche_prod.mdl_user WHERE deleted=0 AND username LIKE '%u';")
+users = query.fetchall()
 moodle_users={}
-for row_user in rows_users:
-  moodle_users[row_user[0]] = row_user[1]
+for user in users:
+    moodle_users[user[0]] = user[1]
 
-#Création d'un dictionnaire avec les id de cours moodle et leur nom
+# Création d'un dictionnaire avec les id de cours moodle et leur nom
 # {1L: 'ARCHE Universit\xc3\xa9 de Lorraine', 2L: 'Espace \xc3\xa9tudiants', 3L: 'Espace enseignants', 4L: 'Podcast Premier semestre'}
 # moodle_courses[3] => Espace enseignants
-cursor.execute("SELECT id,fullname FROM arche_prod.mdl_course;")
-rows_courses = cursor.fetchall()
-moodle_courses={}
-for row_course in rows_courses:
-  moodle_courses[row_course[0]] = row_course[1]
+query.execute("SELECT id,fullname FROM arche_prod.mdl_course;")
+courses = query.fetchall()
+moodle_courses = {}
+for course in courses:
+    moodle_courses[course[0]] = course[1]
 
+# -------------- MAIN --------------
 
-# -------- Programme principal -------- #
-
-#Récupération des logs de la journée
-cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log LIMIT 10;")
-#cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where component='mod_quiz' and action='submitted' LIMIT 50;")
-#cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where eventname like '%assessable_submitted' LIMIT 30;")
-#cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where eventname like '%course_module_viewed' LIMIT 30;")
-rows_log = cursor_log.fetchall()
+# Query for a day | Requête pour une journée
+query_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log LIMIT 10;")
+# cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where component='mod_quiz' and action='submitted' LIMIT 50;")
+# cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where eventname like '%assessable_submitted' LIMIT 30;")
+# cursor_log.execute("SELECT userid,courseid,eventname,component,action,target,objecttable,objectid,timecreated FROM arche_prod_log.logstore_standard_log where eventname like '%course_module_viewed' LIMIT 30;")
+rows_log = query_log.fetchall()
 
 for row_log in rows_log:
-  row_userid = row_log[0]
-  row_courseid = row_log[1]
-  row_eventname = row_log[2]
-  row_component = row_log[3]
-  row_action = row_log[4]
-  row_target = row_log[5]
-  row_objecttable = row_log[6]
-  row_objectid = row_log[7]
-  row_timecreated = row_log[8]
-  #On vérifie s'il s'agit d'un utilisateur remonté dans le tableau moodle_users (étudiant non deleted)
-  if row_userid in moodle_users:
-    #print(row_log)
-    #(25069L, 11813L, '\\mod_resource\\event\\course_module_viewed', 'mod_resource', 'viewed', 'resource', 301058L)
+    row = {} # Clear previous buffer
+    row["userId"] = row_log[0]
+    row["courseId"] = row_log[1]
+    row["eventName"] = row_log[2]
+    row["component"] = row_log[3]
+    row["action"] = row_log[4]
+    row["target"] = row_log[5]
+    row["objecttable"] = row_log[6]
+    row["objectId"] = row_log[7]
+    row["timeCreated"] = row_log[8]
 
-    #On récupère le titre du cours concerné (s'il est présent dans la base)
-    if row_courseid in moodle_courses:
-        titre_cours = moodle_courses[row_courseid]
-    else:
-        titre_cours = "Cours supprimé de la plateforme"
+    # On vérifie s'il s'agit d'un utilisateur remonté dans le tableau moodle_users (étudiant non deleted)
+    if row["userId"] in moodle_users:
+        # print(row_log)
+        # (25069L, 11813L, '\\mod_resource\\event\\course_module_viewed', 'mod_resource', 'viewed', 'resource', 301058L)
 
-    #--------------------------
-    # Visualisation d'un cours
-    #--------------------------
-    if row_eventname == "\core\event\course_viewed":
-        print(moodle_users[row_userid] + " viewed course " + str(row_courseid) + " (" + titre_cours + ") at " + str(datetime.datetime.fromtimestamp(row_timecreated).strftime('%Y-%m-%d %H:%M:%S')))
-        json = {
-        "data":[
-            {
-            "context" : "http://purl.imsglobal.org/ctx/caliper/v1p1",
-            "type" : "Event",
-            "actor" : {
-                "id" : moodle_users[row_userid],
-                "type" : "Person"
-            },
-            "action" : "Viewed",
-            "object" : {
-                "id" : row_courseid,
-                "type" : "CourseSection",
-                "name" : titre_cours,
-            },
-            "group": {
-                "id" : row_courseid,
-                "type" : "CourseSection"
-            },
-            "eventTime" : datetime.datetime.fromtimestamp(row_timecreated).isoformat()
+        # On récupère le titre du cours concerné (s'il est présent dans la base)
+        if row["courseId"] in moodle_courses:
+            course_name = moodle_courses[row["courseId"]]
+        else:
+            course_name = "Cours supprimé de la plateforme"
+
+        # Visualisation d'un cours
+        if row["eventName"] == "\core\event\course_viewed":
+            print(moodle_users[row["userId"]] + " viewed course " + str(row["courseId"]) + " (" + course_name + ") at " + str(datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%d %H:%M:%S')))
+            json = {
+                "data": [
+                    {
+                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "type": "Event",
+                        "actor": {
+                            "id": moodle_users[row["userId"]],
+                            "type": "Person"
+                        },
+                        "action": "Viewed",
+                        "object": {
+                            "id": row["courseId"],
+                            "type": "CourseSection",
+                            "name": course_name,
+                        },
+                        "group": {
+                            "id": row["courseId"],
+                            "type": "CourseSection"
+                        },
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                    }
+                ],
+                "sendTime": datetime.datetime.now().isoformat(),
+                "sensor": "http://scripts/collections/Events/Moodle"
             }
-        ],
-        "sendTime": datetime.datetime.now().isoformat(),
-        "sensor": "http://atom.univ-lorraine.fr/collections/Events/Moodle"
-        }
-        print json
-        print "---------"
-        print sendCaliperStatement(json)
+            print(json)
+            print("---------")
+            print(send_caliper_statement(json))
 
-    #--------------------------
-    # Visualisation d'un module de cours
-    #--------------------------
-    elif row_target == "course_module" and row_action == "viewed":
-        print(moodle_users[row_userid] + " viewed module " + row_component + " (" + getNomModuleFromId(row_objecttable,row_objectid) + ") in course " + str(row_courseid) + " (" + titre_cours + ") at " + str(datetime.datetime.fromtimestamp(row_timecreated).strftime('%Y-%m-%d %H:%M:%S')))
-        json = {
-        "data":[
-            {
-            "context" : "http://purl.imsglobal.org/ctx/caliper/v1p1",
-            "type" : "Event",
-            "actor" : {
-                "id" : moodle_users[row_userid],
-                "type" : "Person"
-            },
-            "action" : "Viewed",
-            "object" : {
-                "id" : row_objectid,
-                "type" : "DigitalResource",
-                "name" : getNomModuleFromId(row_objecttable,row_objectid),
-                "description" : row_component,
-            },
-            "group": {
-                "id" : row_courseid,
-                "type" : "CourseSection"
-            },
-            "eventTime" : datetime.datetime.fromtimestamp(row_timecreated).isoformat()
+        # Visualisation d'un module de cours
+        elif row["target"] == "course_module" and row["action"] == "viewed":
+            print(moodle_users[row["userId"]] + " viewed module " + row["component"] + " (" + get_module_name(row["objecttable"], row["objectId"]) + ") in course " + str(row["courseId"]) + " (" + course_name + ") at " + str(datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%d %H:%M:%S')))
+            json = {
+                "data": [
+                    {
+                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "type": "Event",
+                        "actor": {
+                            "id": moodle_users[row["userId"]],
+                            "type": "Person"
+                        },
+                        "action": "Viewed",
+                        "object": {
+                            "id": row["objectId"],
+                            "type": "DigitalResource",
+                            "name": get_module_name(row["objecttable"], row["objectId"]),
+                            "description": row["component"],
+                        },
+                        "group": {
+                            "id": row["courseId"],
+                            "type": "CourseSection"
+                        },
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                    }
+                ],
+                "sendTime": datetime.datetime.now().isoformat(),
+                "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
-        ],
-        "sendTime": datetime.datetime.now().isoformat(),
-        "sensor": "http://atom.univ-lorraine.fr/collections/Events/Moodle"
-        }
-        print json
-        print "---------"
-        print sendCaliperStatement(json)
+            print (json)
+            print ("---------")
+            print (send_caliper_statement(json))
 
-
-    #--------------------------
-    # Dépôt d'un devoir
-    #--------------------------
-    elif row_eventname == "\mod_assign\event\\assessable_submitted":
-        print(moodle_users[row_userid] + " depot devoir (" + getNomDevoirFromId(row_objectid) + ") in course " + str(row_courseid) + " (" + titre_cours + ") at " + str(datetime.datetime.fromtimestamp(row_timecreated).strftime('%Y-%m-%d %H:%M:%S')))
-        json = {
-        "data":[
-            {
-            "context" : "http://purl.imsglobal.org/ctx/caliper/v1p1",
-            "type" : "Event",
-            "actor" : {
-                "id" : moodle_users[row_userid],
-                "type" : "Person"
-            },
-            "action" : "Submitted",
-            "object" : {
-                "id" : row_objectid,
-                "type" : "AssignableDigitalResource",
-                "name" : getNomDevoirFromId(row_objectid),
-            },
-            "group": {
-                "id" : row_courseid,
-                "type" : "CourseSection"
-            },
-            "eventTime" : datetime.datetime.fromtimestamp(row_timecreated).isoformat()
+        # Dépôt d'un devoir
+        elif row["eventName"] == "\mod_assign\event\\assessable_submitted":
+            print(moodle_users[row["userId"]] + " depot devoir (" + get_module_name(row["objectId"]) + ") in course " + str(row["courseId"]) + " (" + course_name + ") at " + str(datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%d %H:%M:%S')))
+            json = {
+                "data": [
+                    {
+                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "type": "Event",
+                        "actor": {
+                            "id": moodle_users[row["userId"]],
+                            "type": "Person"
+                         },
+                        "action": "Submitted",
+                        "object": {
+                            "id": row["objectId"],
+                            "type": "AssignableDigitalResource",
+                            "name": get_assignment_name(row["objectId"]),
+                        },
+                        "group": {
+                            "id": row["courseId"],
+                            "type": "CourseSection"
+                        },
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                    }
+                ],
+                "sendTime": datetime.datetime.now().isoformat(),
+                "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
-        ],
-        "sendTime": datetime.datetime.now().isoformat(),
-        "sensor": "http://atom.univ-lorraine.fr/collections/Events/Moodle"
-        }
-        print json
-        print "---------"
-        print sendCaliperStatement(json)
+            print(json)
+            print("---------")
+            print(send_caliper_statement(json))
 
-    #--------------------------
-    # Soumission d'un test (quiz)
-    #--------------------------
-    elif row_component == "mod_quiz" and row_action == "submitted":
-        print(moodle_users[row_userid] + " soumission test (" + getNomQuizFromId(row_objectid) + ") in course " + str(row_courseid) + " (" + titre_cours + ") at " + str(datetime.datetime.fromtimestamp(row_timecreated).strftime('%Y-%m-%d %H:%M:%S')))
-        json = {
-        "data":[
-            {
-            "context" : "http://purl.imsglobal.org/ctx/caliper/v1p1",
-            "type" : "Event",
-            "actor" : {
-                "id" : moodle_users[row_userid],
-                "type" : "Person"
-            },
-            "action" : "Submitted",
-            "object" : {
-                "id" : row_objectid,
-                "type" : "Assessment",
-                "name" : getNomQuizFromId(row_objectid),
-            },
-            "group": {
-                "id" : row_courseid,
-                "type" : "CourseSection"
-            },
-            "eventTime" : datetime.datetime.fromtimestamp(row_timecreated).isoformat()
+        # Soumission d'un test (quiz)
+        elif row["component"] == "mod_quiz" and row["action"] == "submitted":
+            print(moodle_users[row["userId"]] + " soumission test (" + get_quiz_name(row["objectId"]) + ") in course " + str(row["courseId"]) + " (" + course_name + ") at " + str(datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%d %H:%M:%S')))
+            json = {
+                "data": [
+                    {
+                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "type": "Event",
+                        "actor": {
+                            "id": moodle_users[row["userId"]],
+                            "type": "Person"
+                        },
+                        "action": "Submitted",
+                        "object": {
+                            "id": row["objectId"],
+                            "type": "Assessment",
+                            "name": get_quiz_name(row["objectId"]),
+                        },
+                        "group": {
+                            "id": row["courseId"],
+                            "type": "CourseSection"
+                        },
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                    }
+                ],
+                "sendTime": datetime.datetime.now().isoformat(),
+                "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
-        ],
-        "sendTime": datetime.datetime.now().isoformat(),
-        "sensor": "http://atom.univ-lorraine.fr/collections/Events/Moodle"
-        }
-        print json
-        print "---------"
-        print sendCaliperStatement(json)
+            print(json)
+            print("---------")
+            print(send_caliper_statement(json))
+        else:
+            print("Autre : " + moodle_users[row["userId"]] + " " + row["action"] + " " + row["target"] + " " + str(row["timeCreated"]))
 
-
-    else:
-        print("Autre : " + moodle_users[row_userid] + " " + row_action + " " + row_target + " " + str(row_timecreated))
-
-#Fermetures DB
 db.close()
 db_log.close()
