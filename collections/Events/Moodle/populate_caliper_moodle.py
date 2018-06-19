@@ -8,15 +8,12 @@ __version__ = "1.0.0"
 __email__ = "benjamin.seclier@univ-lorraine.fr, xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-import MySQLdb, datetime, sys, os, base64, requests
+import MySQLdb, datetime, sys, os , requests
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
 
 # -------------- GLOBAL --------------
-API_URI = SETTINGS['api']['uri'] + '/api/'
-API_USERNAME = SETTINGS['api']['username']
-API_PASSWORD = SETTINGS['api']['password']
 
 DB_LOG_HOST = SETTINGS['db_moodle_log']['host']
 DB_LOG_NAME = SETTINGS['db_moodle_log']['name']
@@ -74,30 +71,6 @@ def get_quiz_name(quiz_id):
     res = query.fetchone()
     return res[0]
 
-
-def send_xapi_statement(statement):
-    """
-    Helper function to send xAPI statements
-    :param statement: JSON Object following the xAPI format
-    :return: HTTP Status
-    """
-    credentials = base64.b64encode(API_USERNAME +':'+ API_PASSWORD)
-    url = API_URI + "/xAPI/statements"
-    headers = {"Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}
-    r = requests.post(url, headers=headers, json=statement)
-    return r.text
-
-
-def send_caliper_statement(statement):
-    """
-    Helper function to send Caliper IMS statement
-    :param statement:
-    :return: HTTP Status
-    """
-    url = SETTINGS['api']['uri'] + "/key/caliper"
-    headers = {"Authorization": API_USERNAME}
-    r = requests.post(url, headers=headers, json=statement)
-    return r.text
 
 
 # Création d'un dictionnaire avec les id moodle et les logins UL

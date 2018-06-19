@@ -17,6 +17,7 @@ import yaml
 import smtplib
 import sys
 import os
+import base64
 from ldap.controls import SimplePagedResultsControl
 
 
@@ -25,6 +26,10 @@ LDAP_24_API = LooseVersion(ldap.__version__) >= LooseVersion('2.4')
 
 with open(os.path.dirname(__file__) + "/settings.yml", 'r') as dot_yml:
     SETTINGS = yaml.load(dot_yml)
+
+API_URI = SETTINGS['api']['uri'] + '/api/'
+API_USERNAME = SETTINGS['api']['username']
+API_PASSWORD = SETTINGS['api']['password']
 
 
 class Colors:
@@ -184,3 +189,24 @@ def set_ldap_cookie(lc_object, pctrls, pagesize=SETTINGS['ldap']['page_size']):
         est, cookie = pctrls[0].controlValue
         lc_object.controlValue = (pagesize,cookie)
         return cookie
+
+
+def send_xapi_statement(statement):
+    """
+    Helper function to send xAPI statements
+    :param statement: JSON Object following the xAPI format
+    :return: HTTP Status
+    """
+    credentials = base64.b64encode(API_USERNAME +':'+ API_PASSWORD)
+    response = requests.post(API_URI + "/xAPI/statements", headers={"Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}, json=statement)
+    return response.status_code == 201
+
+
+def send_caliper_statement(statement):
+    """
+    Helper function to send Caliper IMS statement
+    :param statement:
+    :return: HTTP Status
+    """
+    response = requests.post(API_URI + "/key/caliper", headers={"Authorization": API_USERNAME}, json=statement)
+    return response.status_code == 201
