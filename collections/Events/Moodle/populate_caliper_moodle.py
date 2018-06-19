@@ -37,36 +37,40 @@ query_log = db_log.cursor()
 
 
 # -------------- FUNCTIONS --------------
-def get_module_name(type, id):
+def get_module_name(module_type, module_id):
     """
     Récupère le nom d'un module (fichier, test, url, etc.) pour un type et id donné
-    :param type:  module type
-    :param id:  module id
+    :param module_type:  module type
+    :param module_id:  module id
     :return: module name
     """
-    query.execute("SELECT name FROM mdl_" + type + " WHERE id = '" + str(id) + "';")
+    query.execute("SELECT name FROM mdl_" + module_type + " WHERE id = '" + str(module_id) + "';")
     res = query.fetchone()
     return res[0]
 
 
-def get_assignment_name(id):
+def get_assignment_name(assignment_id):
     """
     Récupère le nom d'un devoir pour un id donné
-    :param id: assignment id
+    :param assignment_id: assignment id
     :return: assignment name
     """
-    query.execute("SELECT name FROM arche_prod.mdl_assign,arche_prod.mdl_assign_submission WHERE arche_prod.mdl_assign_submission.assignment = arche_prod.mdl_assign.id AND arche_prod.mdl_assign_submission.id="+str(id)+";")
+    query.execute("SELECT name FROM arche_prod.mdl_assign,arche_prod.mdl_assign_submission "
+                  "WHERE arche_prod.mdl_assign_submission.assignment = arche_prod.mdl_assign.id"
+                  " AND arche_prod.mdl_assign_submission.id= " + str(assignment_id) + ";")
     res = query.fetchone()
     return res[0]
 
 
-def get_quiz_name(id):
+def get_quiz_name(quiz_id):
     """
     Récupère le nom du test selon l'id de la tentative
-    :param id: quiz id
+    :param quiz_id: quiz id
     :return: quiz name
     """
-    query.execute("SELECT name FROM arche_prod.mdl_quiz,arche_prod.mdl_quiz_attempts WHERE arche_prod.mdl_quiz.id = arche_prod.mdl_quiz_attempts.quiz AND arche_prod.mdl_quiz_attempts.id="+str(id)+";")
+    query.execute("SELECT name FROM arche_prod.mdl_quiz,arche_prod.mdl_quiz_attempts "
+                  "WHERE arche_prod.mdl_quiz.id = arche_prod.mdl_quiz_attempts.quiz "
+                  "AND arche_prod.mdl_quiz_attempts.id=" + str(quiz_id) + ";")
     res = query.fetchone()
     return res[0]
 
