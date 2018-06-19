@@ -27,7 +27,7 @@ LDAP_24_API = LooseVersion(ldap.__version__) >= LooseVersion('2.4')
 with open(os.path.dirname(__file__) + "/settings.yml", 'r') as dot_yml:
     SETTINGS = yaml.load(dot_yml)
 
-API_URI = SETTINGS['api']['uri'] + '/api/'
+API_URI = SETTINGS['api']['uri']
 API_USERNAME = SETTINGS['api']['username']
 API_PASSWORD = SETTINGS['api']['password']
 
@@ -199,7 +199,7 @@ def send_xapi_statement(statement):
     """
     credentials = base64.b64encode(API_USERNAME +':'+ API_PASSWORD)
     response = requests.post(API_URI + "/xAPI/statements", headers={"Authorization": "Basic "+ credentials, "X-Experience-API-Version": "1.0.0"}, json=statement)
-    return response.status_code == 201
+    return response.status_code == 200
 
 
 def send_caliper_statement(statement):
@@ -209,4 +209,4 @@ def send_caliper_statement(statement):
     :return: HTTP Status
     """
     response = requests.post(API_URI + "/key/caliper", headers={"Authorization": API_USERNAME}, json=statement)
-    return response.status_code == 201
+    return response.status_code == 200
