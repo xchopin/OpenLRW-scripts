@@ -4,7 +4,7 @@
 __author__ = "Benjamin Seclier, Xavier Chopin"
 __copyright__ = "Copyright 2018, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __email__ = "benjamin.seclier@univ-lorraine.fr, xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
