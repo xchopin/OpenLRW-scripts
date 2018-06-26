@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 from time import gmtime, strftime
 
-logging.basicConfig(filename=os.path.dirname(__file__) + '/populate_events.log', level=logging.ERROR)
+logging.basicConfig(filename=os.path.dirname(__file__) + '/import_events.log', level=logging.ERROR)
 
 # -------------- GLOBAL --------------
 
@@ -34,10 +34,10 @@ DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
-MAIL = smtplib.SMTP('localhost')
+MAIL = None
 
 COUNTER_JSON_SENT = 0
-TOTAL_USER = 0
+TOTAL_EVENT = 0
 
 # -------------- DATABASES --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
@@ -74,9 +74,9 @@ def get_assignment_name(assignment_id):
     """
     name = "Devoir supprimé de la plateforme"  # Course deleted
 
-    query.execute("SELECT name FROM arche_prod.mdl_assign,arche_prod.mdl_assign_submission "
-                  "WHERE arche_prod.mdl_assign_submission.assignment = arche_prod.mdl_assign.id "
-                  "AND arche_prod.mdl_assign_submission.id= " + str(assignment_id) + ";")
+    query.execute("SELECT name FROM mdl_assign, mdl_assign_submission "
+                  "WHERE mdl_assign_submission.assignment = mdl_assign.id "
+                  "AND mdl_assign_submission.id= " + str(assignment_id) + ";")
     res = query.fetchone()
 
     if res is not None:
@@ -112,6 +112,7 @@ def exit_log(object_id, timestamp):
     :param timestamp:
     :ret
     """
+    MAIL = smtplib.SMTP('localhost')
     email_message = "Subject: Error Moodle Events \n\n An error occured when sending the event #" + object_id + " created at " + timestamp
     db.close()
     db_log.close()
@@ -162,8 +163,6 @@ for user in users:
     moodle_students[user[0]] = user[1]
 
 # Création d'un dictionnaire avec les id de cours moodle et leur nom
-# {1L: 'ARCHE Universit\xc3\xa9 de Lorraine', 2L: 'Espace \xc3\xa9tudiants', 3L: 'Espace enseignants', 4L: 'Podcast Premier semestre'}
-# moodle_courses[3] => Espace enseignants
 query.execute("SELECT id, fullname FROM mdl_course;")
 courses = query.fetchall()
 moodle_courses = {}
@@ -173,11 +172,11 @@ for course in courses:
 # Query for a day | Requête pour une journée
 query_log.execute(
     "SELECT  userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
-    "FROM logstore_standard_log " + sql_where)
+    "FROM mdl_logstore_standard_log " + sql_where)
 
 rows_log = query_log.fetchall()
 
-TOTAL_USER = len(rows_log)
+TOTAL_EVENT = len(rows_log)
 
 for row_log in rows_log:
     row = {}  # Clears previous buffer
@@ -222,7 +221,7 @@ for row_log in rows_log:
                     }
                 ],
                 "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://scripts/collections/Events/Moodle"
+                "sensor": "http://localhost/scripts/collections/Events/Moodle"
             }
 
         elif row["target"] == "course_module" and row["action"] == "viewed":  # Visualisation d'un module de cours
@@ -315,8 +314,10 @@ for row_log in rows_log:
 db.close()
 db_log.close()
 pretty_message("Script finished",
-               "Total number of users : " + str(TOTAL_USER) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
-              "Subject: Moodle Events script finished \n\n Import_events.py finished its execution \n\n -------------- \n SUMMARY \n "
-              "-------------- \n" +
-              "Total number of users : " + str(TOTAL_USER) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT))
+               "Total number of events : " + str(TOTAL_EVENT) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
+
+MAIL = smtplib.SMTP('localhost')
+
+MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle Events script finished \n\n "
+              "import_events.py finished its execution \n\n -------------- \n SUMMARY \n -------------- \n" +
+              "Total number of events : " + str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT))
