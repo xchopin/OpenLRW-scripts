@@ -105,7 +105,7 @@ def get_quiz_name(quiz_id):
     return name
 
 
-def exit_log(object_id, timestamp):
+def exit_log(object_id, timestamp, reason):
     """
     Stops the script and email + logs the last event
     :param statement:
@@ -114,12 +114,13 @@ def exit_log(object_id, timestamp):
     :ret
     """
     MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle Events \n\n An error occured when sending the event #" + object_id + " created at " + timestamp
+    email_message = "Subject: Error Moodle Events \n\n An error occured when sending the event #" + object_id +\
+                    " created at " + timestamp + "\n\n Details: \n" + reason
     db.close()
     db_log.close()
     MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("An error occured at " + strftime("%Y-%m-%d %H:%M:%S",
-                                                    gmtime()) + " - Event #" + object_id + " created at " + timestamp)
+    logging.error("An error occured at " + strftime("%Y-%m-%d %H:%M:%S",gmtime()) + " - Event #" + object_id +
+                  " created at " + timestamp + "\n\n Details: \n" + reason)
     pretty_error("Error on POST",
                  "Cannot send statement for event #" + object_id + " created at " + timestamp)  # It will also exit
     sys.exit(0)
@@ -135,10 +136,11 @@ def prevent_caliper_error(statement, object_id, timestamp):
     """
 
     try:
-        if send_caliper_statement(statement) == False:
-            exit_log(object_id, timestamp)
-    except requests.exceptions.ConnectionError:
-        exit_log(object_id, timestamp)
+        response_code = send_caliper_statement(statement)
+        if response_code != 200:
+            exit_log(object_id, timestamp, response_code)
+    except requests.exceptions.ConnectionError as e:
+        exit_log(object_id, timestamp, str(e))
 
     # -------------- MAIN --------------
 
