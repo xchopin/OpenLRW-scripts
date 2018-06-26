@@ -143,17 +143,17 @@ def prevent_caliper_error(statement, object_id, timestamp):
 
 
 if not (len(sys.argv) > 1):
-    pretty_error("Wrong usage", ["This script requires 1 or 2 arguments (timestamps)"])
+    pretty_error("Wrong usage", ["This script requires 1 or 2 arguments (timestamps: FROM - TO)"])
 elif (len(sys.argv) == 2):
     if (re.match(TIMESTAMP_REGEX, sys.argv[1])):
         sql_where = "WHERE timecreated >= " + sys.argv[1]
     else:
-        pretty_error("Wrong usage", ["Argument must be a timestamp"])
+        pretty_error("Wrong usage", ["Argument must be a timestamp (FROM)"])
 else:
     if (re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2])):
         sql_where = "WHERE timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
     else:
-        pretty_error("Wrong usage", ["Arguments must be a timestamp"])
+        pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
 
 # Création d'un dictionnaire avec les id moodle et les logins UL
 query.execute("SELECT id, username FROM mdl_user WHERE deleted=0 AND username LIKE '%u';")
