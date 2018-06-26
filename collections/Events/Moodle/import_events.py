@@ -115,12 +115,12 @@ def exit_log(object_id, timestamp, reason):
     """
     MAIL = smtplib.SMTP('localhost')
     email_message = "Subject: Error Moodle Events \n\n An error occured when sending the event #" + object_id +\
-                    " created at " + timestamp + "\n\n Details: \n" + reason
+                    " created at " + timestamp + "\n\n Details: \n" + str(reason)
     db.close()
     db_log.close()
     MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
     logging.error("An error occured at " + strftime("%Y-%m-%d %H:%M:%S",gmtime()) + " - Event #" + object_id +
-                  " created at " + timestamp + "\n\n Details: \n" + reason)
+                  " created at " + timestamp + "\n\n Details: \n" + str(reason))
     pretty_error("Error on POST",
                  "Cannot send statement for event #" + object_id + " created at " + timestamp)  # It will also exit
     sys.exit(0)
@@ -140,7 +140,7 @@ def prevent_caliper_error(statement, object_id, timestamp):
         if response_code != 200:
             exit_log(object_id, timestamp, response_code)
     except requests.exceptions.ConnectionError as e:
-        exit_log(object_id, timestamp, str(e))
+        exit_log(object_id, timestamp, e)
 
     # -------------- MAIN --------------
 
