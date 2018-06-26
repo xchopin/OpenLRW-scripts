@@ -211,4 +211,4 @@ def send_caliper_statement(statement):
     """
     response = requests.post(API_URI + "/key/caliper", headers={"Authorization": API_USERNAME}, json=statement)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /key/caliper - Response: ' + str(response.status_code))
-    return response.status_code == 200
+    return response.status_code
