@@ -29,6 +29,7 @@ DB_LOG_HOST = SETTINGS['db_moodle_log']['host']
 DB_LOG_NAME = SETTINGS['db_moodle_log']['name']
 DB_LOG_USERNAME = SETTINGS['db_moodle_log']['username']
 DB_LOG_PASSWORD = SETTINGS['db_moodle_log']['password']
+DB_LOG_TABLE = SETTINGS['db_moodle_log']['log_table']
 
 DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
@@ -171,8 +172,8 @@ for course in courses:
 
 # Query for a day | Requête pour une journée
 query_log.execute(
-    "SELECT  userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
-    "FROM mdl_logstore_standard_log " + sql_where)
+    "SELECT userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
+    "FROM " + DB_LOG_TABLE + " " + sql_where)
 
 rows_log = query_log.fetchall()
 
@@ -221,7 +222,7 @@ for row_log in rows_log:
                     }
                 ],
                 "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
+                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
 
         elif row["target"] == "course_module" and row["action"] == "viewed":  # Visualisation d'un module de cours
@@ -249,7 +250,7 @@ for row_log in rows_log:
                     }
                 ],
                 "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
+                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
 
         elif row["eventName"] == "\mod_assign\event\\assessable_submitted":  # Dépôt d'un devoir
@@ -276,7 +277,7 @@ for row_log in rows_log:
                     }
                 ],
                 "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
+                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
 
         elif row["component"] == "mod_quiz" and row["action"] == "submitted":  # Soumission d'un test (quiz)
@@ -303,7 +304,7 @@ for row_log in rows_log:
                     }
                 ],
                 "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
+                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
         else:
             continue
