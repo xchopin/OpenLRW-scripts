@@ -86,7 +86,9 @@ query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_cou
 
 JWT = generate_jwt()
 
-for course in query.fetchall():
+courses = query.fetchall()
+
+for course in courses:
     course_id, identifier, title, last_modified, summary = course
     json = {
         'sourcedId': course_id,
@@ -109,3 +111,12 @@ for course in query.fetchall():
         exit_log(course_id, response)
 
 db.close()
+
+pretty_message("Script finished",
+               "Total number of courses sent : " + str(len(courses)))
+
+MAIL = smtplib.SMTP('localhost')
+
+MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle Courses script finished \n\n "
+              "import_classes.py finished its execution \n\n -------------- \n SUMMARY \n -------------- \n" +
+              "Total number of courses sent : " + str(len(courses)))
