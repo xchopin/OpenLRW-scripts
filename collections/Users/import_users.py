@@ -1,306 +1,132 @@
 #!/usr/bin/python
 # coding: utf-8
 
-__author__ = "Benjamin Seclier, Xavier Chopin"
+__author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2018, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.0"
-__email__ = "benjamin.seclier@univ-lorraine.fr, xavier.chopin@univ-lorraine.fr"
+__version__ = "1.0.1"
+__email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-import MySQLdb
-import datetime
-import sys
-import os
-import requests
-import re
-
-sys.path.append(os.path.dirname(__file__) + '/../../..')
+import requests, json
+import sys, os
+sys.path.append(os.path.dirname(__file__) + '/../..')
 from bootstrap.helpers import *
-from time import gmtime, strftime
 
-logging.basicConfig(filename=os.path.dirname(__file__) + '/populate_events.log', level=logging.ERROR)
+logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=logging.DEBUG)
 
 # -------------- GLOBAL --------------
-
-TIMESTAMP_REGEX = r'^(\d{10})?$'
-
-DB_LOG_HOST = SETTINGS['db_moodle_log']['host']
-DB_LOG_NAME = SETTINGS['db_moodle_log']['name']
-DB_LOG_USERNAME = SETTINGS['db_moodle_log']['username']
-DB_LOG_PASSWORD = SETTINGS['db_moodle_log']['password']
-
-DB_HOST = SETTINGS['db_moodle']['host']
-DB_NAME = SETTINGS['db_moodle']['name']
-DB_USERNAME = SETTINGS['db_moodle']['username']
-DB_PASSWORD = SETTINGS['db_moodle']['password']
-MAIL = smtplib.SMTP('localhost')
-
-# -------------- DATABASES --------------
-db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
-db_log = MySQLdb.connect(DB_LOG_HOST, DB_LOG_USERNAME, DB_LOG_PASSWORD, DB_LOG_NAME)
-
-query = db.cursor()
-query_log = db_log.cursor()
+BASEDN = SETTINGS['ldap']['base_dn']
+URI = SETTINGS['api']['uri'] + '/api/'
+ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
 
 
 # -------------- FUNCTIONS --------------
-def get_module_name(module_type, module_id):
+def post_user(jwt, data, check):
+    check = 'false' if check is False else 'true'
+    response = requests.post(URI + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    print Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
+    return response.status_code != 401  # if token expired
+
+
+def get_users(jwt):
+    response = requests.get(URI + '/users', headers={'Authorization': 'Bearer ' + jwt})
+    print Colors.OKGREEN + '[GET]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
+    return False if response.status_code == 401 else response.content  # if token expired
+
+
+def delete_user(jwt, user_id):
+    response = requests.delete(URI + '/users/' + user_id, headers={'Authorization': 'Bearer ' + jwt})
+    print Colors.FAIL + '[DELETE]' + Colors.ENDC + ' /users/' + user_id + ' - Response: ' + str(response.status_code)
+    return response.status_code != 401  # if token expired
+
+
+def populate(check, jwt):
     """
-    Récupère le nom d'un module (fichier, test, url, etc.) pour un type et id donné
-    :param module_type:  module type
-    :param module_id:  module id
-    :return: module name
+     Populates the MongoUser collection by inserting all the LDAP users
+    :param check: boolean to check duplicates
+    :param jwt: JSON Web Token for OpenLRW
+    :return: void
     """
-    name = "Module supprimé de la plateforme"
+    pretty_message('Initializing', 'Will soon populate the mongoUser collection')
+    controls = create_ldap_controls(SETTINGS['ldap']['page_size'])
+    while 1 < 2:  # hi deadmau5
+        try:
+            # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
+            users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, 'uid=*', ATTRLIST, serverctrls=[controls])
+        except ldap.LDAPError as e:
+            pretty_error('LDAP search failed', '%s' % e)
 
-    query.execute("SELECT name FROM mdl_" + module_type + " WHERE id = '" + str(module_id) + "';")
-    res = query.fetchone()
+        try:
+            rtype, rdata, ruser, server_ctrls = l.result3(users)  # Pull the results from the search request
+        except ldap.LDAPError as e:
+            pretty_error('Couldn\'t pull LDAP results', '%s' % e)
 
-    if (res is not None):
-        name = res[0]
+        for dn, attributes in rdata:
 
-    return name
+            if 'businessCategory' not in attributes:
+                print attributes['uid'][0]
+                continue
 
+            json = {
+                'sourcedId': attributes['uid'][0],
+                'givenName': attributes['displayName'][0],
+                'metadata': {
+                    'ldap_business_category': attributes['businessCategory'][0]
+                }
+            }
 
-def get_assignment_name(assignment_id):
-    """
-    Récupère le nom d'un devoir pour un id donné
-    :param assignment_id: assignment id
-    :return: assignment name
-    """
-    name = "Devoir supprimé de la plateforme"
+            if not post_user(jwt, json, check):
+                jwt = generate_jwt()
+                post_user(jwt, json, check)
 
-    query.execute("SELECT name FROM mdl_assign, mdl_assign_submission "
-                  "WHERE mdl_assign_submission.assignment = mdl_assign.id "
-                  "AND mdl_assign_submission.id= " + str(assignment_id) + ";")
-    res = query.fetchone()
+        # Get cookie for next request
+        pctrls = get_ldap_controls(server_ctrls)
+        if not pctrls:
+            print >> sys.stderr, 'Warning: Server ignores RFC 2696 control.'
+            break
 
-    if (res is not None):
-        name = res[0]
-
-    return name
-
-
-def get_quiz_name(quiz_id):
-    """
-    Récupère le nom du test selon l'id de la tentative
-    :param quiz_id: quiz id
-    :return: quiz name
-    """
-    name = "Quiz supprimé de la plateforme"
-
-    query.execute("SELECT name FROM mdl_quiz, mdl_quiz_attempts "
-                  "WHERE mdl_quiz.id = mdl_quiz_attempts.quiz "
-                  "AND mdl_quiz_attempts.id=" + str(quiz_id) + ";")
-    res = query.fetchone()
-
-    if (res is not None):
-        name = res[0]
-
-    return name
+        cookie = set_ldap_cookie(controls, pctrls, SETTINGS['ldap']['page_size'])
+        if not cookie:
+            break
+    l.unbind()
 
 
-def exit_log(object_id, timestamp):
-    """
-    Stops the script and email + logs the last event
-    :param statement:
-    :param object_id:
-    :param timestamp:
-    :ret
-    """
-    email_message = "Subject: Error Moodle Events \n\n An error occured when sending the event #" + object_id + " created at " + timestamp
-    db.close()
-    db_log.close()
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("An error occured at " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " - Event #" + object_id + " created at " + timestamp)
-    pretty_error("Error on POST",
-                 "Cannot send statement for event #" + object_id + " created at " + timestamp)  # It will also exit
-    sys.exit(0)
+# -------------- MAIN --------------
+if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):  # Checking args
+    pretty_error(
+        "Wrong usage",
+        ["reset: clears the user collection then imports them without checking duplicates", "update: imports new users"]
+    )
 
+try:
+    ldap.set_option(ldap.OPT_REFERRALS, 0)   # Don't follow referrals
+    # Ignores server side certificate errors (assumes using LDAPS and self-signed cert).
+    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+    l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
+    l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
+except ldap.LDAPError as e:
+    pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
 
-def prevent_caliper_error(statement, object_id, timestamp):
-    """
-    Sends Caliper statement with checking response, if it fails it stops the execution and log + email the event that failed
-    :param statement:
-    :param object_id:
-    :param timestamp:
-    :return:
-    """
-    try:
-        if send_caliper_statement(statement) == False:
-            exit_log(object_id, timestamp)
-    except requests.exceptions.ConnectionError:
-        exit_log(object_id, timestamp)
+try:
+    l.simple_bind_s(SETTINGS['ldap']['user'], SETTINGS['ldap']['password'])
+except ldap.LDAPError as e:
+    pretty_error('LDAP bind failed', '%s' % e)
 
-    # -------------- MAIN --------------
+jwt = generate_jwt()
 
-
-if not (len(sys.argv) > 1):
-    pretty_error("Wrong usage", ["This script requires 1 or 2 arguments (timestamps)"])
-elif (len(sys.argv) == 2):
-    if (re.match(TIMESTAMP_REGEX, sys.argv[1])):
-        sql_where = "WHERE timecreated >= " + sys.argv[1]
+if sys.argv[1] == 'reset':  # Deletes evey users and inserts them
+    users = get_users(jwt)
+    if users:  # It shouldn't expire but it's better to check
+        data = json.loads(users)
+        for row in data:
+            if not delete_user(jwt, row['user']['sourcedId']):
+                jwt = generate_jwt()
+                delete_user(jwt, row['user']['sourcedId'])
     else:
-        pretty_error("Wrong usage", ["Argument must be a timestamp"])
-else:
-    if (re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2])):
-        sql_where = "WHERE timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
-    else:
-        pretty_error("Wrong usage", ["Arguments must be a timestamp"])
+        pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
+    populate(False, jwt)
+elif sys.argv[1] == 'update':
+    populate(True, jwt)
 
-# Création d'un dictionnaire avec les id moodle et les logins UL
-query.execute("SELECT id, username FROM mdl_user WHERE deleted=0 AND username LIKE '%u';")
-users = query.fetchall()
-moodle_users = {}
-for user in users:
-    moodle_users[user[0]] = user[1]
-
-# Création d'un dictionnaire avec les id de cours moodle et leur nom
-query.execute("SELECT id, fullname FROM mdl_course;")
-courses = query.fetchall()
-moodle_courses = {}
-for course in courses:
-    moodle_courses[course[0]] = course[1]
-
-# Query for a day | Requête pour une journée
-query_log.execute(
-    "SELECT  userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
-    "FROM logstore_standard_log " + sql_where + " ;")
-
-rows_log = query_log.fetchall()
-
-for row_log in rows_log:
-    row = {}  # Clears previous buffer
-    row["userId"] = row_log[0]
-    row["courseId"] = row_log[1]
-    row["eventName"] = row_log[2]
-    row["component"] = row_log[3]
-    row["action"] = row_log[4]
-    row["target"] = row_log[5]
-    row["objecttable"] = row_log[6]
-    row["objectId"] = row_log[7]
-    row["timeCreated"] = row_log[8]
-    row["id"] = row_log[9]
-
-    if row["userId"] in moodle_users:  # Checks if users isn't deleted from the db
-        if row["courseId"] in moodle_courses:  # Checks if the course given exists in Moodle
-            course_name = moodle_courses[row["courseId"]]
-        else:
-            course_name = "Cours supprimé de la plateforme"
-
-        if row["eventName"] == "\core\event\course_viewed":  # Visualisation d'un cours
-            json = {
-                "data": [
-                    {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
-                        "actor": {
-                            "id": moodle_users[row["userId"]],
-                            "type": "Person"
-                        },
-                        "action": "Viewed",
-                        "object": {
-                            "id": row["courseId"],
-                            "type": "CourseSection",
-                            "name": course_name,
-                        },
-                        "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
-                        },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
-                    }
-                ],
-                "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://scripts/collections/Events/Moodle"
-            }
-
-        elif row["target"] == "course_module" and row["action"] == "viewed":  # Visualisation d'un module de cours
-            json = {
-                "data": [
-                    {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
-                        "actor": {
-                            "id": moodle_users[row["userId"]],
-                            "type": "Person"
-                        },
-                        "action": "Viewed",
-                        "object": {
-                            "id": row["objectId"],
-                            "type": "DigitalResource",
-                            "name": get_module_name(row["objecttable"], row["objectId"]),
-                            "description": row["component"],
-                        },
-                        "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
-                        },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
-                    }
-                ],
-                "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
-            }
-
-        elif row["eventName"] == "\mod_assign\event\\assessable_submitted":  # Dépôt d'un devoir
-            json = {
-                "data": [
-                    {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
-                        "actor": {
-                            "id": moodle_users[row["userId"]],
-                            "type": "Person"
-                        },
-                        "action": "Submitted",
-                        "object": {
-                            "id": row["objectId"],
-                            "type": "AssignableDigitalResource",
-                            "name": get_assignment_name(row["objectId"]),
-                        },
-                        "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
-                        },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
-                    }
-                ],
-                "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
-            }
-
-        elif row["component"] == "mod_quiz" and row["action"] == "submitted":  # Soumission d'un test (quiz)
-            json = {
-                "data": [
-                    {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
-                        "actor": {
-                            "id": moodle_users[row["userId"]],
-                            "type": "Person"
-                        },
-                        "action": "Submitted",
-                        "object": {
-                            "id": row["objectId"],
-                            "type": "Assessment",
-                            "name": get_quiz_name(row["objectId"]),
-                        },
-                        "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
-                        },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
-                    }
-                ],
-                "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://localhost/scripts/collections/Events/Moodle"
-            }
-        else:
-            continue
-
-        prevent_caliper_error(json, str(row["id"]), str(row["timeCreated"]))
-
-db.close()
-db_log.close()
+sys.exit(0)
