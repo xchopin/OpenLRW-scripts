@@ -64,16 +64,16 @@ db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
 # Query to get active courses
-query.execute("SELECT grades.id, grades.quiz, grades.userid, grades.grade, grades.timemodified, quiz.course"
-              " FROM mdl_quiz_grades as grades, mdl_quiz as quiz"
-              " WHERE grades.quiz = quiz.id")
+query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified, quiz.course"
+              " FROM mdl_user as users, mdl_quiz_grades as grades, mdl_quiz as quiz"
+              " WHERE grades.quiz = quiz.id AND users.id = grades.userid")
 
 results = query.fetchall()
 
 JWT = generate_jwt()
 
 for result in results:
-    result_id, lineitem_id, student_id, score, date, class_id = result
+    student_id, result_id, lineitem_id, score, date, class_id = result
 
     if date > 0:
         date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S')
