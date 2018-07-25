@@ -33,8 +33,8 @@ MAIL = None
 
 # -------------- FUNCTIONS --------------
 def post_result(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/results', headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/ ' + str(class_id) + '/results - Response: ' + str(
+    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/results - Response: ' + str(
         response.status_code))
     return response.status_code
 
