@@ -14,6 +14,7 @@ import os
 import requests
 import datetime
 import csv
+import uuid
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -83,14 +84,14 @@ with f:
                 grade['status'] = data[3]
 
             json = {
-                'sourcedId': grade['exam_id'],
+                'sourcedId': str(uuid.uuid4()),
                 'score': str(grade['score']),
                 'resultstatus': grade['status'],
                 'student': {
                     'sourcedId': username
                 },
                 'lineitem': {
-                    'sourcedId': 'null'
+                    'sourcedId': grade['exam_id']
                 },
                 'metadata': {
                     'type': grade['type'],
