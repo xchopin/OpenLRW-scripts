@@ -13,6 +13,7 @@ import sys
 import os
 import requests
 import datetime
+import csv
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -27,10 +28,11 @@ MAIL = None
 
 # -------------- FUNCTIONS --------------
 def post_result(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt},
+                             json=data)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/results - Response: ' + str(
         response.status_code))
-    return response.status_code
+    return response
 
 
 def exit_log(result_id, reason):
@@ -53,50 +55,58 @@ def exit_log(result_id, reason):
     sys.exit(0)
 
 
+# -------------- MAIN --------------
 
 JWT = generate_jwt()
 
-for result in results:
-    student_id, result_id, lineitem_id, score, date, class_id = result
+# Creates a class for Apogee (temporary)
+try:
+    response = requests.post(URI, headers={'Authorization': 'Bearer ' + JWT},
+                             json={'sourcedId': 'unknown_apogee', 'title': 'Apogée'})
+    if response == 500:
+        exit_log('Unable to create the Class "Apogée"', response)
+except requests.exceptions.ConnectionError as e:
+    exit_log('Unable to create the Class "Apogée"', e)
 
-    if date > 0:
-        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S')
-    else:
-        date = ""
+f = open('data/inscriptions.csv', 'r')
 
-    json = {
-        'sourcedId': result_id,
-        'score': str(score),
-        'date': date,
-        'student': {
-            'sourcedId': student_id
-        },
-        'lineitem': {
-            'sourcedId': lineitem_id
-        },
-        'metadata': {
-            'category': 'Moodle'
-        }
-    }
+with f:
+    reader = csv.reader(f, delimiter=";")
+    for row in reader:
+        username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], \
+                                                                                        row[4], row[5], row[6]
 
-    response = post_result(JWT, class_id, json)
+        for x in range(7, len(row)):  # grades
+            data = row[x].split('-')
+            grade = {'type': data[0], 'exam_id': data[1], 'score': data[2], 'status': None}
+            if len(data) > 3:
+                grade['status'] = data[3]
 
-    try:
-        if response == 401:
-            JWT = generate_jwt
-            post_result(JWT, class_id, json)
-        elif response == 500:
-            exit_log(result_id, response)
-    except requests.exceptions.ConnectionError as e:
-        exit_log(result_id, e)
+            json = {
+                'sourcedId': grade['exam_id'],
+                'score': str(grade['score']),
+                'resultstatus': grade['status'],
+                'student': {
+                    'sourcedId': username
+                },
+                'lineitem': {
+                    'sourcedId': 'null'
+                },
+                'metadata': {
+                    'type': grade['type'],
+                    'year': year,
+                    'category': 'Apogee'
 
-db.close()
+                }
+            }
 
-pretty_message("Script finished",
-               "Total number of results sent : " + str(len(results)))
+            response = post_result(JWT, 'unknown_apogee', json)
+
+pretty_message("Script finished", "Total number of results sent : " + str(len(reader)))
 
 MAIL = smtplib.SMTP('localhost')
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle Results script finished \n\n "
+MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Apogée Results script finished \n\n "
                                                                   "import_results.py finished its execution \n\n -------------- \n SUMMARY \n -------------- \n" +
-              "Total number of results sent : " + str(len(results)))
+              "Total number of results sent : " + str(len(reader)))
+
