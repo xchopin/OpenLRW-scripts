@@ -96,12 +96,20 @@ with f:
                 'metadata': {
                     'type': grade['type'],
                     'year': year,
-                    'category': 'Apogee'
+                    'category': 'Apogée'
 
                 }
             }
 
-            response = post_result(JWT, 'unknown_apogee', json)
+            try:
+                response = post_result(JWT, 'unknown_apogee', json)
+                if response == 500:
+                    exit_log(grade['exam_id'], response)
+                elif response == 401:
+                    JWT = generate_jwt()
+                    post_result(JWT, 'unknown_apogee', json)
+            except requests.exceptions.ConnectionError as e:
+                exit_log('Unable to create the Class "Apogée"', e)
 
 pretty_message("Script finished", "Total number of results sent : " + str(len(reader)))
 
