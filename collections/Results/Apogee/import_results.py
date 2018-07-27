@@ -23,8 +23,9 @@ logging.basicConfig(filename=os.path.dirname(__file__) + '/import_results.log', 
 
 # -------------- GLOBAL --------------
 URI = SETTINGS['api']['uri'] + '/api/classes/'
-
+ROWS_NUMBER = 0
 MAIL = None
+FILE_NAME = 'data/inscriptions.csv'
 
 
 # -------------- FUNCTIONS --------------
@@ -69,10 +70,11 @@ try:
 except requests.exceptions.ConnectionError as e:
     exit_log('Unable to create the Class "Apogée"', e)
 
-f = open('data/inscriptions.csv', 'r')
+f = open(FILE_NAME, 'r')
 
 with f:
     reader = csv.reader(f, delimiter=";")
+    ROWS_NUMBER = sum(1 for line in open(FILE_NAME))
     for row in reader:
         username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], \
                                                                                         row[4], row[5], row[6]
@@ -111,11 +113,11 @@ with f:
             except requests.exceptions.ConnectionError as e:
                 exit_log('Unable to create the Class "Apogée"', e)
 
-pretty_message("Script finished", "Total number of results sent : " + str(len(reader)))
+pretty_message("Script finished", "Total number of results sent : " + str(ROWS_NUMBER))
 
 MAIL = smtplib.SMTP('localhost')
 
 MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Apogée Results script finished \n\n "
                                                                   "import_results.py finished its execution \n\n -------------- \n SUMMARY \n -------------- \n" +
-              "Total number of results sent : " + str(len(reader)))
+              "Total number of results sent : " + str(ROWS_NUMBER))
 
