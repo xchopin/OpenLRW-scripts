@@ -95,9 +95,8 @@ for result in results:
         }
     }
 
-    response = post_result(JWT, class_id, json)
-
     try:
+        response = post_result(JWT, class_id, json)
         if response == 401:
             JWT = generate_jwt
             post_result(JWT, class_id, json)
