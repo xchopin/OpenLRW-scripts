@@ -62,7 +62,6 @@ def exit_log(enrollment_id, reason):
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-#Liste des enrollments
 query.execute("SELECT assignment.id, assignment.userid "
               "FROM mdl_role_assignments as assignment, mdl_context as context "
               "WHERE context.id = assignment.contextid "
@@ -76,10 +75,12 @@ for enrollment in enrollments:
     enrollment_id, user_id = enrollment[0], enrollment[1]
     json = {
         'sourcedId': enrollment_id,
+        'role': 'student',
         'user': {
             'sourcedId': user_id,
-            'role': 'student'
-        }
+        },
+        'primary': True,
+        'status': 'active'
     }
 
     try:
@@ -88,7 +89,7 @@ for enrollment in enrollments:
             JWT = generate_jwt
             post_enrollment(JWT, enrollment_id, json)
         elif response == 500:
-            exit_log(enrollment_id, response)
+            exit_log(enrollment_id, "Error 500")
     except requests.exceptions.ConnectionError as e:
         exit_log(enrollment_id, e)
 
