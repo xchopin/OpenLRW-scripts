@@ -44,7 +44,7 @@ def exit_log(enrollment_id, reason):
     :param enrollment_id:
     :param reason:
     """
-    result_id = str(enrollment_id)
+    enrollment_id = str(enrollment_id)
     reason = str(reason)
 
     MAIL = smtplib.SMTP('localhost')
@@ -54,7 +54,7 @@ def exit_log(enrollment_id, reason):
     MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
     logging.error("Subject: Error Moodle Enrollments \n\n An error occured when sending the object " + enrollment_id + \
                   "\n\n Details: \n" + reason)
-    pretty_error("Error on POST", "Cannot send the enrollment object " + result_id)  # It will also exit
+    pretty_error("Error on POST", "Cannot send the enrollment object " + enrollment_id)  # It will also exit
     sys.exit(0)
 
 
