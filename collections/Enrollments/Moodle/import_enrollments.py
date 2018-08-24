@@ -62,22 +62,22 @@ def exit_log(enrollment_id, reason):
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-query.execute("SELECT assignment.id, assignment.userid "
-              "FROM mdl_role_assignments as assignment, mdl_context as context "
+query.execute("SELECT assignment.id, user.username, assignment.userid  "
+              "FROM mdl_role_assignments as assignment, mdl_context as context, mdl_user as user "
               "WHERE context.id = assignment.contextid "
-              "AND assignment.roleid = 5")
+              "AND assignment.roleid = 5 AND user.id = assignment.userid")
 
 enrollments = query.fetchall()
 
 JWT = generate_jwt()
 
 for enrollment in enrollments:
-    enrollment_id, user_id = enrollment[0], enrollment[1]
+    enrollment_id, username = enrollment[0], enrollment[1]
     json = {
         'sourcedId': enrollment_id,
         'role': 'student',
         'user': {
-            'sourcedId': user_id,
+            'sourcedId': username,
         },
         'primary': True,
         'status': 'active'
