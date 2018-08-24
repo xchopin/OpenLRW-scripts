@@ -286,27 +286,27 @@ for row_log in rows_log:
             json = {
                 "data": [
                     {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
+                        "@context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "@type": "Event",
                         "actor": {
-                            "id": moodle_students[row["userId"]],
-                            "type": "Person"
+                            "@id": moodle_students[row["userId"]],
+                            "@type": "Person"
                         },
                         "action": "Submitted",
                         "object": {
-                            "id": row["objectId"],
-                            "type": "Assessment",
+                            "@id": row["objectId"],
+                            "@type": "Assessment",
                             "name": get_quiz_name(row["objectId"]),
                         },
                         "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
+                            "@id": row["courseId"],
+                            "@type": "CourseSection"
                         },
                         "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
                     }
                 ],
-                "sendTime": datetime.datetime.now().isoformat(),
-                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
+                "@sendTime": datetime.datetime.now().isoformat(),
+                "@sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
         else:
             continue
