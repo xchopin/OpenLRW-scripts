@@ -204,21 +204,21 @@ for row_log in rows_log:
             json = {
                 "data": [
                     {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
+                        "@context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "@type": "Event",
                         "actor": {
-                            "id": moodle_students[row["userId"]],
-                            "type": "Person"
+                            "@id": moodle_students[row["userId"]],
+                            "@type": "Person"
                         },
                         "action": "Viewed",
                         "object": {
-                            "id": row["courseId"],
-                            "type": "CourseSection",
-                            "name": course_name,
+                            "@id": row["courseId"],
+                            "@type": "CourseSection",
+                            "name": course_name
                         },
                         "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
+                            "@id": row["courseId"],
+                            "@type": "CourseSection"
                         },
                         "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
                     }
@@ -231,22 +231,22 @@ for row_log in rows_log:
             json = {
                 "data": [
                     {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
+                        "@context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "@type": "Event",
                         "actor": {
-                            "id": moodle_students[row["userId"]],
-                            "type": "Person"
+                            "@id": moodle_students[row["userId"]],
+                            "@type": "Person"
                         },
                         "action": "Viewed",
                         "object": {
-                            "id": row["objectId"],
-                            "type": "DigitalResource",
+                            "@id": row["objectId"],
+                            "@type": "DigitalResource",
                             "name": get_module_name(row["objecttable"], row["objectId"]),
-                            "description": row["component"],
+                            "description": row["component"]
                         },
                         "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
+                            "@id": row["courseId"],
+                            "@type": "CourseSection"
                         },
                         "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
                     }
@@ -259,21 +259,21 @@ for row_log in rows_log:
             json = {
                 "data": [
                     {
-                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
-                        "type": "Event",
+                        "@context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "@type": "Event",
                         "actor": {
-                            "id": moodle_students[row["userId"]],
-                            "type": "Person"
+                            "@id": moodle_students[row["userId"]],
+                            "@type": "Person"
                         },
                         "action": "Submitted",
                         "object": {
-                            "id": row["objectId"],
-                            "type": "AssignableDigitalResource",
-                            "name": get_assignment_name(row["objectId"]),
+                            "@id": row["objectId"],
+                            "@type": "AssignableDigitalResource",
+                            "name": get_assignment_name(row["objectId"])
                         },
                         "group": {
-                            "id": row["courseId"],
-                            "type": "CourseSection"
+                            "@id": row["courseId"],
+                            "@type": "CourseSection"
                         },
                         "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
                     }
@@ -296,7 +296,7 @@ for row_log in rows_log:
                         "object": {
                             "@id": row["objectId"],
                             "@type": "Assessment",
-                            "name": get_quiz_name(row["objectId"]),
+                            "name": get_quiz_name(row["objectId"])
                         },
                         "group": {
                             "@id": row["courseId"],
@@ -305,8 +305,8 @@ for row_log in rows_log:
                         "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
                     }
                 ],
-                "@sendTime": datetime.datetime.now().isoformat(),
-                "@sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
+                "sendTime": datetime.datetime.now().isoformat(),
+                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
         else:
             continue

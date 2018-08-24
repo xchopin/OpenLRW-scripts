@@ -1,0 +1,25 @@
+{
+                "data": [
+                    {
+                        "context": "http://purl.imsglobal.org/ctx/caliper/v1p1",
+                        "type": "Event",
+                        "actor": {
+                            "id": "id",
+                            "type": "Person"
+                        },
+                        "action": "Viewed",
+                        "object": {
+                            "id": "id",
+                            "type": "CourseSection",
+                            "name": "course_name",
+                        },
+                        "group": {
+                            "id": "id",
+                            "type": "CourseSection"
+                        },
+                        "eventTime": "2014-01-22T14:56:59.301Z"
+                    }
+                ],
+                "sendTime": "2014-01-22T14:56:59.301Z",
+                "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
+            }
