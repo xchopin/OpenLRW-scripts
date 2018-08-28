@@ -118,6 +118,7 @@ pretty_message("Script finished", "Total number of results sent : " + str(ROWS_N
 MAIL = smtplib.SMTP('localhost')
 
 MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Apogée Results script finished \n\n "
-                                                                  "import_results.py finished its execution \n\n -------------- \n SUMMARY \n -------------- \n" +
+              "import_results.py finished its execution in " + measure_time() +
+              " seconds \n\n -------------- \n SUMMARY \n -------------- \n" +
               "Total number of results sent : " + str(ROWS_NUMBER))
 

@@ -101,7 +101,8 @@ pretty_message("Script finished",
 
 MAIL = smtplib.SMTP('localhost')
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle line item script finished \n\n "
-                                                                  "import_lineitems.py finished its execution \n\n -------------- \n SUMMARY \n -------------- \n" +
+MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
+              "Subject: Moodle line item script finished \n\n import_lineitems.py finished its execution in "
+              + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" +
               "Total number of line items sent : " + str(len(line_items)))
 

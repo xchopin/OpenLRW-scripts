@@ -18,6 +18,7 @@ import smtplib
 import sys
 import os
 import base64
+import time
 from ldap.controls import SimplePagedResultsControl
 
 
@@ -30,6 +31,7 @@ with open(os.path.dirname(__file__) + "/settings.yml", 'r') as dot_yml:
 API_URI = SETTINGS['api']['uri']
 API_USERNAME = SETTINGS['api']['username']
 API_PASSWORD = SETTINGS['api']['password']
+TIME_START = time.time()
 
 
 class Colors:
@@ -212,3 +214,7 @@ def send_caliper_statement(statement):
     response = requests.post(API_URI + "/key/caliper", headers={"Authorization": API_USERNAME}, json=statement)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /key/caliper - Response: ' + str(response.status_code))
     return response.status_code
+
+
+def measure_time():
+    return str(time.time() - TIME_START)
