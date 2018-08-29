@@ -33,7 +33,7 @@ MAIL = None
 
 # -------------- FUNCTIONS --------------
 def post_lineitem(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/lineitems', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    response = requests.post(URI + str(class_id) + '/lineitems?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/lineitems - Response: ' + str(response.status_code))
     return response.status_code
 
