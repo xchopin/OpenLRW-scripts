@@ -18,7 +18,7 @@ import datetime
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(filename=os.path.dirname(__file__) + '/import_results.log', level=logging.ERROR)
+logging.basicConfig(filename=os.path.dirname(__file__) + '/import_lineitems.log', level=logging.ERROR)
 
 # -------------- GLOBAL --------------
 DB_HOST = SETTINGS['db_moodle']['host']
