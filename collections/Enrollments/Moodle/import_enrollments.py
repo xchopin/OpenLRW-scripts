@@ -33,7 +33,7 @@ MAIL = None
 
 # -------------- FUNCTIONS --------------
 def post_enrollment(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/enrollments?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    response = requests.post(URI + str(class_id) + '/enrollments', headers={'Authorization': 'Bearer ' + jwt}, json=data)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/enrollments - Response: ' + str(response.status_code))
     return response.status_code
 
@@ -62,7 +62,7 @@ def exit_log(enrollment_id, reason):
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-query.execute("SELECT assignment.id, user.username, assignment.userid  "
+query.execute("SELECT assignment.id, user.username, context.instanceid, assignment.userid  "
               "FROM mdl_role_assignments as assignment, mdl_context as context, mdl_user as user "
               "WHERE context.id = assignment.contextid "
               "AND assignment.roleid = 5 AND user.id = assignment.userid")
@@ -72,7 +72,7 @@ enrollments = query.fetchall()
 JWT = generate_jwt()
 
 for enrollment in enrollments:
-    enrollment_id, username = enrollment[0], enrollment[1]
+    enrollment_id, username, class_id, user_id = enrollment
     json = {
         'sourcedId': enrollment_id,
         'role': 'student',
@@ -84,10 +84,10 @@ for enrollment in enrollments:
     }
 
     try:
-        response = post_enrollment(JWT, enrollment_id, json)
+        response = post_enrollment(JWT, class_id, json)
         if response == 401:
-            JWT = generate_jwt
-            post_enrollment(JWT, enrollment_id, json)
+            JWT = generate_jwt()
+            post_enrollment(JWT, class_id, json)
         elif response == 500:
             exit_log(enrollment_id, "Error 500")
     except requests.exceptions.ConnectionError as e:
