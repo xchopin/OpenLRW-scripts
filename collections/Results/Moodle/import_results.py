@@ -98,7 +98,7 @@ for result in results:
     try:
         response = post_result(JWT, class_id, json)
         if response == 401:
-            JWT = generate_jwt
+            JWT = generate_jwt()
             post_result(JWT, class_id, json)
         elif response == 500:
             exit_log(result_id, response)

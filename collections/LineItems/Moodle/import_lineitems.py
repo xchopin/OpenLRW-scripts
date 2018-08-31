@@ -87,7 +87,7 @@ for line_item in line_items:
     try:
         response = post_lineitem(JWT, class_id, json)
         if response == 401:
-            JWT = generate_jwt
+            JWT = generate_jwt()
             post_lineitem(JWT, class_id, json)
         elif response == 500:
             exit_log(quiz_id, response)
