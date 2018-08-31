@@ -33,8 +33,10 @@ MAIL = None
 
 # -------------- FUNCTIONS --------------
 def post_enrollment(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/enrollments', headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/enrollments - Response: ' + str(response.status_code))
+    response = requests.post(URI + str(class_id) + '/enrollments?check=false',
+                             headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/enrollments - Response: ' + str(
+        response.status_code))
     return response.status_code
 
 
@@ -90,6 +92,7 @@ for enrollment in enrollments:
             post_enrollment(JWT, class_id, json)
         elif response == 500:
             exit_log(enrollment_id, "Error 500")
+        time.sleep(0.005)
     except requests.exceptions.ConnectionError as e:
         exit_log(enrollment_id, e)
 
