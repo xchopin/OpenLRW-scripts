@@ -14,6 +14,7 @@ import sys
 import os
 import requests
 import datetime
+import re
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -21,6 +22,7 @@ from bootstrap.helpers import *
 logging.basicConfig(filename=os.path.dirname(__file__) + '/import_enrollments.log', level=logging.ERROR)
 
 # -------------- GLOBAL --------------
+TIMESTAMP_REGEX = r'^(\d{10})?$'
 DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
@@ -64,20 +66,28 @@ def exit_log(enrollment_id, reason):
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-query.execute("SELECT assignment.id, user.username, context.instanceid, assignment.userid  "
+# ----- MAIN -------
+if not (len(sys.argv) > 1):
+    pretty_error("Wrong usage", ["This script requires at least 1 timestamp argument (from)"])
+else:
+    if not re.match(TIMESTAMP_REGEX, sys.argv[1]):
+        pretty_error("Wrong usage", ["Argument must be a timestamp (from)"])
+
+query.execute("SELECT assignment.id, user.username, context.instanceid, assignment.userid, assignment.roleid  "
               "FROM mdl_role_assignments as assignment, mdl_context as context, mdl_user as user "
               "WHERE context.id = assignment.contextid "
-              "AND assignment.roleid = 5 AND user.id = assignment.userid")
+              "AND user.id = assignment.userid AND (assignment.roleid = 3 OR assignment.roleid = 4 OR assignment.roleid = 5)"
+              "AND assignment.timemodified >= " + sys.argv[1])
 
 enrollments = query.fetchall()
 
 JWT = generate_jwt()
 
 for enrollment in enrollments:
-    enrollment_id, username, class_id, user_id = enrollment
+    enrollment_id, username, class_id, user_id, role = enrollment
     json = {
         'sourcedId': enrollment_id,
-        'role': 'student',
+        'role': 'student' if role == 5 else 'teacher',
         'user': {
             'sourcedId': username,
         },
@@ -92,7 +102,7 @@ for enrollment in enrollments:
             post_enrollment(JWT, class_id, json)
         elif response == 500:
             exit_log(enrollment_id, "Error 500")
-        time.sleep(0.005)
+        time.sleep(0.002)
     except requests.exceptions.ConnectionError as e:
         exit_log(enrollment_id, e)
 
