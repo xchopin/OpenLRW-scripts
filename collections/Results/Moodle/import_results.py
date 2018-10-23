@@ -30,10 +30,13 @@ URI = SETTINGS['api']['uri'] + '/api/classes/'
 
 MAIL = None
 
+COUNTER = 0
+
 
 # -------------- FUNCTIONS --------------
 def post_result(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt},
+                             json=data)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/results - Response: ' + str(
         response.status_code))
     return response.status_code
@@ -63,7 +66,7 @@ def exit_log(result_id, reason):
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-# Query to get active courses
+# Query to get quizzes
 query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified, quiz.course"
               " FROM mdl_user as users, mdl_quiz_grades as grades, mdl_quiz as quiz"
               " WHERE grades.quiz = quiz.id AND users.id = grades.userid")
@@ -91,7 +94,8 @@ for result in results:
             'sourcedId': lineitem_id
         },
         'metadata': {
-            'category': 'Moodle'
+            'category': 'Moodle',
+            'type': 'quiz'
         }
     }
 
@@ -105,13 +109,78 @@ for result in results:
     except requests.exceptions.ConnectionError as e:
         exit_log(result_id, e)
 
+COUNTER = len(results)
+
+# Query to get active quizzes
+query.execute(
+    "SELECT username, grades.id, grades.itemid, grades.finalgrade, grades.feedback, grades.timemodified, items.courseid"
+    " FROM mdl_user as users, mdl_activequiz as activequiz, mdl_grade_grades as grades, mdl_grade_items as items"
+    " WHERE grades.itemid = items.id AND items.courseid = activequiz.course"
+    " AND users.id = grades.userid AND grades.finalgrade is NOT NULL")
+
+results = query.fetchall()
+
+for result in results:
+    student_id, result_id, lineitem_id, score, feedback, date, class_id = result
+
+    if date > 0:
+        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S')
+    else:
+        date = ""
+
+    if feedback == None:
+        json = {
+            'sourcedId': result_id,
+            'score': str(score),
+            'date': date,
+            'student': {
+                'sourcedId': student_id
+            },
+            'lineitem': {
+                'sourcedId': lineitem_id
+            },
+            'metadata': {
+                'category': 'Moodle',
+                'type': 'active_quiz'
+            }
+        }
+    else:
+        json = {
+            'sourcedId': result_id,
+            'score': str(score),
+            'date': date,
+            'student': {
+                'sourcedId': student_id
+            },
+            'lineitem': {
+                'sourcedId': lineitem_id
+            },
+            'metadata': {
+                'category': 'Moodle',
+                'type': 'active_quiz',
+                'feedback': feedback
+            }
+        }
+
+    try:
+        response = post_result(JWT, class_id, json)
+        if response == 401:
+            JWT = generate_jwt()
+            post_result(JWT, class_id, json)
+        elif response == 500:
+            exit_log(result_id, response)
+    except requests.exceptions.ConnectionError as e:
+        exit_log(result_id, e)
+
+COUNTER = COUNTER + len(results)
 db.close()
 
 pretty_message("Script finished",
-               "Total number of results sent : " + str(len(results)))
+               "Total number of results sent : " + str(len(COUNTER)))
 
 MAIL = smtplib.SMTP('localhost')
 
 MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
               "Subject: Moodle Results script finished \n\n import_results.py finished its execution in " + measure_time() + "seconds "
-              "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(len(results)))
+                                                                                                                             "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(
+                  len(COUNTER)))
