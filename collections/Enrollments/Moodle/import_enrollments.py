@@ -102,9 +102,13 @@ for enrollment in enrollments:
             post_enrollment(JWT, class_id, json)
         elif response == 500:
             exit_log(enrollment_id, "Error 500")
-        time.sleep(0.002)
+        time.sleep(0.01)
     except requests.exceptions.ConnectionError as e:
-        exit_log(enrollment_id, e)
+        time.sleep(0.5)
+        try: # last try
+            response = post_enrollment(JWT, class_id, json)
+        except requests.exceptions.ConnectionError as e:
+            exit_log(enrollment_id, e)
 
 db.close()
 
