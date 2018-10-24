@@ -91,7 +91,7 @@ for result in results:
             'sourcedId': student_id
         },
         'lineitem': {
-            'sourcedId': lineitem_id
+            'sourcedId': 'quiz_' + str(lineitem_id)
         },
         'metadata': {
             'category': 'Moodle',
@@ -137,7 +137,7 @@ for result in results:
                 'sourcedId': student_id
             },
             'lineitem': {
-                'sourcedId': lineitem_id
+                'sourcedId': 'active_quiz_' + str(lineitem_id)
             },
             'metadata': {
                 'category': 'Moodle',
@@ -153,7 +153,7 @@ for result in results:
                 'sourcedId': student_id
             },
             'lineitem': {
-                'sourcedId': lineitem_id
+                'sourcedId': 'active_quiz_' + str(lineitem_id)
             },
             'metadata': {
                 'category': 'Moodle',
