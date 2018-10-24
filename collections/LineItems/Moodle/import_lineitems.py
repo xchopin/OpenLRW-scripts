@@ -27,7 +27,7 @@ DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 
 URI = SETTINGS['api']['uri'] + '/api/classes/'
-
+COUNTER = 0
 MAIL = None
 
 
@@ -48,12 +48,10 @@ def exit_log(lineitem_id, reason):
     reason = str(reason)
 
     MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle line item \n\n An error occured when sending the line item " + lineitem_id + \
-                    "\n\n Details: \n" + reason
+    email_message = "Subject: Error Moodle line item \n\n An error occured when sending the line item " + lineitem_id + "\n\n Details: \n" + reason
     db.close()
     MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("Subject: Error Moodle line item \n\n An error occured when sending the line item" + lineitem_id + \
-                  "\n\n Details: \n" + reason)
+    logging.error("Subject: Error Moodle line item \n\n An error occured when sending the line item" + lineitem_id + "\n\n Details: \n" + reason)
     pretty_error("Error on POST", "Cannot send the line item object " + lineitem_id)  # It will also exit
     sys.exit(0)
 
@@ -74,7 +72,7 @@ for line_item in line_items:
     close_date = datetime.datetime.fromtimestamp(close_date).strftime('%Y-%m-%dT%H:%M:%S') if close_date > 0 else None
 
     json = {
-        "sourcedId": quiz_id,
+        "sourcedId": "quiz_" + str(quiz_id),
         "title": name,
         "description": description,
         "assignDate": open_date,
@@ -94,15 +92,45 @@ for line_item in line_items:
     except requests.exceptions.ConnectionError as e:
         exit_log(quiz_id, e)
 
+COUNTER = len(line_items)
+
+
+# Active quiz
+query.execute("SELECT id, course, name, intro FROM mdl_activequiz")
+
+line_items = query.fetchall()
+
+for line_item in line_items:
+    quiz_id, class_id, name, description = line_item
+
+    json = {
+        "sourcedId": "active_quiz_" + str(quiz_id),
+        "title": name,
+        "description": description,
+        "class": {
+            "sourcedId": class_id
+        }
+    }
+
+    try:
+        response = post_lineitem(JWT, class_id, json)
+        if response == 401:
+            JWT = generate_jwt()
+            post_lineitem(JWT, class_id, json)
+        elif response == 500:
+            exit_log(quiz_id, response)
+    except requests.exceptions.ConnectionError as e:
+        exit_log(quiz_id, e)
+
+COUNTER = COUNTER + len(line_items)
 db.close()
 
-pretty_message("Script finished",
-               "Total number of line items sent : " + str(len(line_items)))
+pretty_message("Script finished","Total number of line items sent : " + str(COUNTER))
 
 MAIL = smtplib.SMTP('localhost')
 
 MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
               "Subject: Moodle line item script finished \n\n import_lineitems.py finished its execution in "
               + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" +
-              "Total number of line items sent : " + str(len(line_items)))
+              "Total number of line items sent : " + str(COUNTER))
 
