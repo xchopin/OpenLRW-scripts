@@ -113,7 +113,7 @@ COUNTER = len(results)
 
 # Query to get active quizzes
 query.execute(
-    "SELECT username, grades.id, grades.itemid, grades.finalgrade, grades.feedback, grades.timemodified, items.courseid"
+    "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified, activequiz.course"
     " FROM mdl_user as users, mdl_activequiz as activequiz, mdl_grade_grades as grades, mdl_grade_items as items"
     " WHERE grades.itemid = items.id AND items.courseid = activequiz.course"
     " AND users.id = grades.userid AND grades.finalgrade is NOT NULL")
@@ -176,11 +176,10 @@ COUNTER = COUNTER + len(results)
 db.close()
 
 pretty_message("Script finished",
-               "Total number of results sent : " + str(len(COUNTER)))
+               "Total number of results sent : " + str(COUNTER))
 
 MAIL = smtplib.SMTP('localhost')
 
 MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
-              "Subject: Moodle Results script finished \n\n import_results.py finished its execution in " + measure_time() + "seconds "
-                                                                                                                             "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(
-                  len(COUNTER)))
+            "Subject: Moodle Results script finished \n\n import_results.py finished its execution in " + measure_time() + "seconds "
+            "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER))
