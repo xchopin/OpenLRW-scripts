@@ -22,7 +22,7 @@ from bootstrap.helpers import *
 logging.basicConfig(filename=os.path.dirname(__file__) + '/import_results.log', level=logging.ERROR)
 
 # -------------- GLOBAL --------------
-URI = SETTINGS['api']['uri'] + '/api/classes/'
+URI = SETTINGS['api']['uri'] + '/api'
 ROWS_NUMBER = 0
 MAIL = None
 FILE_NAME = 'data/inscriptions.csv'
@@ -30,10 +30,22 @@ FILE_NAME = 'data/inscriptions.csv'
 
 # -------------- FUNCTIONS --------------
 def post_result(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt},
-                             json=data)
+    response = requests.post(URI + '/classes/' + str(class_id) + '/results?check=false',
+                             headers={'Authorization': 'Bearer ' + jwt}, json=data)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/results - Response: ' + str(
         response.status_code))
+    return response
+
+
+def get_lineitems(jwt):
+    response = requests.get(URI + '/lineitems', headers={'Authorization': 'Bearer ' + jwt})
+    print(Colors.OKGREEN + '[GET]' + Colors.ENDC + '/lineitems - Response: ' + str(response.status_code))
+    return response
+
+
+def create_lineitem(jwt, data):
+    response = requests.post(URI + '/lineitems', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/lineitems - Response: ' + str(response.status_code))
     return response
 
 
@@ -47,19 +59,20 @@ def exit_log(result_id, reason):
     reason = str(reason)
 
     MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Apogée Results \n\n An error occured when sending the result " + result_id + \
-                    "\n\n Details: \n" + reason
+    email_message = "Subject: Error Apogée Results \n\n An error occured when sending the result " + result_id + "\n\n Details: \n" + reason
 
     MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("Subject: Error Apogée Results \n\n An error occured when sending the result " + result_id + \
-                  "\n\n Details: \n" + reason)
-    pretty_error("Error on POST", "Cannot send the result object " + result_id)  # It will also exit
+    logging.error(
+        "Subject: Error Apogée Results \n\n An error occured when sending the result " + result_id + "\n\n Details: \n" + reason)
+    pretty_error("Error on POST", "Cannot send the result object " + result_id)
     sys.exit(0)
 
 
 # -------------- MAIN --------------
 
 JWT = generate_jwt()
+
+line_items = get_lineitems(JWT).json();
 
 # Creates a class for Apogee (temporary)
 try:
@@ -99,7 +112,6 @@ with f:
                     'type': grade['type'],
                     'year': year,
                     'category': 'Apogée'
-
                 }
             }
 
@@ -113,12 +125,42 @@ with f:
             except requests.exceptions.ConnectionError as e:
                 exit_log('Unable to create the Class "Apogée"', e)
 
+            # Check if LineItem already exists otherwise it creates a temporary one
+
+            res = False
+            for i in range(0, len(line_items)):
+                if line_items[i]['lineItem']['sourcedId'] == grade['exam_id']:
+                    res = True
+                    break
+
+            if not res:
+                item = {
+                    "sourcedId": grade['exam_id'],
+                    "title": "null",
+                    "description": "null",
+                    "assignDate": "",
+                    "dueDate": "",
+                    "class": {
+                        "sourcedId": "null"
+                    }
+                }
+
+                try:
+                    response = create_lineitem(JWT, item)
+                    if response == 500:
+                        exit_log(grade['exam_id'], response)
+                    elif response == 401:
+                        JWT = generate_jwt()
+                        create_lineitem(JWT, item)
+                except requests.exceptions.ConnectionError as e:
+                    exit_log('Unable to create the LineItem ' + grade['exam_id'], e)
+
 pretty_message("Script finished", "Total number of results sent : " + str(ROWS_NUMBER))
 
 MAIL = smtplib.SMTP('localhost')
 
 MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Apogée Results script finished \n\n "
-              "import_results.py finished its execution in " + measure_time() +
+                                                                  "import_results.py finished its execution in " + measure_time() +
               " seconds \n\n -------------- \n SUMMARY \n -------------- \n" +
               "Total number of results sent : " + str(ROWS_NUMBER))
 
