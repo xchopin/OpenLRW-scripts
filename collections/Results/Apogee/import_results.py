@@ -72,7 +72,7 @@ def exit_log(result_id, reason):
 
 JWT = generate_jwt()
 
-line_items = get_lineitems(JWT).json();
+line_items = get_lineitems(JWT).json()
 
 # Creates a class for Apogee (temporary)
 try:
@@ -85,6 +85,7 @@ except requests.exceptions.ConnectionError as e:
 
 f = open(FILE_NAME, 'r')
 
+# - - - - PARSING THE CSV FILE - - - -
 with f:
     reader = csv.reader(f, delimiter=";")
     ROWS_NUMBER = sum(1 for line in open(FILE_NAME))
@@ -92,6 +93,7 @@ with f:
         username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], \
                                                                                         row[4], row[5], row[6]
 
+        # LOOPING ON THE ROWS
         for x in range(7, len(row)):  # grades
             data = row[x].split('-')
             grade = {'type': data[0], 'exam_id': data[1], 'score': data[2], 'status': None}
@@ -115,6 +117,7 @@ with f:
                 }
             }
 
+            # Let's send the result object
             try:
                 response = post_result(JWT, 'unknown_apogee', json)
                 if response == 500:
@@ -125,17 +128,21 @@ with f:
             except requests.exceptions.ConnectionError as e:
                 exit_log('Unable to create the Class "Apogée"', e)
 
-            # Check if LineItem already exists otherwise it creates a temporary one
-
+            # Does the lineItem exist?
             res = False
+
             for i in range(0, len(line_items)):
                 if line_items[i]['lineItem']['sourcedId'] == grade['exam_id']:
                     res = True
                     break
 
+            # If it does not we will create it
             if not res:
                 item = {
                     "sourcedId": grade['exam_id'],
+                    "lineItem": {
+                        "sourcedId": grade['exam_id']
+                    },
                     "title": "null",
                     "description": "null",
                     "assignDate": "",
@@ -144,6 +151,9 @@ with f:
                         "sourcedId": "null"
                     }
                 }
+
+                # Add new line item to the dynamic array
+                line_items.append(item)
 
                 try:
                     response = create_lineitem(JWT, item)
