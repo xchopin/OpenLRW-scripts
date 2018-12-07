@@ -44,7 +44,7 @@ def get_lineitems(jwt):
 
 
 def create_lineitem(jwt, data):
-    response = requests.post(URI + '/lineitems', headers={'Authorization': 'Bearer ' + jwt}, json=data)
+    response = requests.post(URI + '/lineitems?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
     print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/lineitems - Response: ' + str(response.status_code))
     return response
 
