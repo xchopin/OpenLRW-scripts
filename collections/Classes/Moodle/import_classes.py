@@ -60,12 +60,20 @@ def exit_log(course_id, reason):
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
+
+print("Loading SQL Query... it might take some minutes.")
+
 # Query to get active courses
-query.execute(
-    "SELECT mdl_course.id, COUNT(mdl_logstore_standard_log.id) AS HITS FROM mdl_course , mdl_logstore_standard_log WHERE mdl_logstore_standard_log.courseid = mdl_course.id AND mdl_logstore_standard_log.origin= 'web' AND mdl_course.visible = 1 GROUP BY mdl_course.id HAVING  HITS > 10 AND mdl_course.id != 1")
+query.execute("SELECT course.id, COUNT(logstore.id) AS HITS "
+              "FROM mdl_course as course, mdl_logstore_standard_log as logstore "
+              "WHERE logstore.courseid = course.id AND logstore.origin= 'web' AND course.visible = 1 "
+              "GROUP BY course.id HAVING  HITS > 10 AND course.id != 1")
 
 results = query.fetchall()
 active_courses = []
+
+
+print("SQL Query executed. Fetching data.")
 
 for result in results:
     active_courses.append(result[0])
