@@ -32,6 +32,7 @@ API_URI = SETTINGS['api']['uri']
 API_USERNAME = SETTINGS['api']['username']
 API_PASSWORD = SETTINGS['api']['password']
 TIME_START = time.time()
+TIMESTAMP_REGEX = r'^(\d{10})?$'
 
 
 class Colors:
