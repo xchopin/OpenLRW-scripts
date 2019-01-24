@@ -96,12 +96,12 @@ COUNTER = len(line_items)
 
 
 # Active quiz
-query.execute("SELECT id, course, name, intro FROM mdl_activequiz")
+query.execute("SELECT id, course, name, intro, scale FROM mdl_activequiz")
 
 line_items = query.fetchall()
 
 for line_item in line_items:
-    quiz_id, class_id, name, description = line_item
+    quiz_id, class_id, name, description, scale = line_item
 
     json = {
         "sourcedId": "active_quiz_" + str(quiz_id),
@@ -109,7 +109,7 @@ for line_item in line_items:
         "description": description,
         "class": {
             "sourcedId": class_id
-        }
+        },
     }
 
     try:
