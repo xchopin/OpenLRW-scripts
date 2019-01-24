@@ -12,6 +12,7 @@ import MySQLdb
 import datetime
 import sys
 import os
+import re
 import requests
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
@@ -28,6 +29,7 @@ DB_PASSWORD = SETTINGS['db_moodle']['password']
 URI = SETTINGS['api']['uri'] + '/api/classes'
 
 MAIL = None
+FILE_PATH = './data/active_classes.txt'
 
 
 # -------------- FUNCTIONS --------------
@@ -40,9 +42,8 @@ def post_class(jwt, data):
 def exit_log(course_id, reason):
     """
     Stops the script and email + logs the last event
-    :param statement:
-    :param object_id:
-    :param timestamp:
+    :param course_id:
+    :param reason:
     :ret
     """
     MAIL = smtplib.SMTP('localhost')
@@ -61,26 +62,25 @@ db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
 
-print("Loading SQL Query... it might take some minutes.")
+if not os.path.isfile(FILE_PATH):
+    pretty_error(FILE_PATH + " does not exist", "You have to create it following the documentation.")
+    exit()
 
-# Query to get active courses
-query.execute("SELECT course.id, COUNT(logstore.id) AS HITS "
-              "FROM mdl_course as course, mdl_logstore_standard_log as logstore "
-              "WHERE logstore.courseid = course.id AND logstore.origin= 'web' AND course.visible = 1 "
-              "GROUP BY course.id HAVING  HITS > 10 AND course.id != 1")
+active_classes = []
+f = open(FILE_PATH, "r")
+print("Parsing the file...")
 
-results = query.fetchall()
-active_courses = []
-
-
-print("SQL Query executed. Fetching data.")
-
-for result in results:
-    active_courses.append(result[0])
+for line in f:
+    if line.startswith('#') or line.startswith(' '):
+        continue
+    content = re.search(r'\d+', line)
+    if content:  # solve issues for lines with only characters
+        active_classes.append(content.group())
 
 # Query to get a population (BALI)
 query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
               "WHERE mdl_context.id = mdl_enrol_bali.contextid AND contextlevel = 50 AND type = 'FORM' ")
+
 results = query.fetchall()
 population = dict()
 for result in results:
@@ -101,7 +101,7 @@ for course in courses:
     json = {
         'sourcedId': course_id,
         'title': title,
-        'status': 'active' if course_id in active_courses else 'inactive',
+        'status': 'active' if course_id in active_classes else 'inactive',
         'metadata': {
             'summary': summary,
             'lastModified': last_modified,
