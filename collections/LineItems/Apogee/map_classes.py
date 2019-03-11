@@ -21,25 +21,11 @@ from bootstrap.helpers import *
 
 logging.basicConfig(filename=os.path.dirname(__file__) + '/map_classes.log', level=logging.ERROR)
 
+
+
 # -------------- GLOBAL --------------
-URI = SETTINGS['api']['uri'] + '/api'
 ROWS_NUMBER = 0
-MAIL = None
 FILE_NAME = 'data/mapping.csv'
-
-
-# -------------- FUNCTIONS --------------
-
-def get_lineitems(jwt):
-    response = requests.get(URI + '/lineitems', headers={'Authorization': 'Bearer ' + jwt})
-    print(Colors.OKGREEN + '[GET]' + Colors.ENDC + '/lineitems - Response: ' + str(response.status_code))
-    return response
-
-
-def create_lineitem(jwt, data):
-    response = requests.post(URI + '/lineitems', headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/lineitems - Response: ' + str(response.status_code))
-    return response
 
 
 def exit_log(result_id, reason):
@@ -48,33 +34,26 @@ def exit_log(result_id, reason):
     :param result_id:
     :param reason:
     """
-    result_id = str(result_id)
-    reason = str(reason)
-
-    MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Apogée Results \n\n An error occured when sending the result " + result_id + "\n\n Details: \n" + reason
-
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error(
-        "Subject: Error Apogée Results \n\n An error occured when sending the result " + result_id + "\n\n Details: \n" + reason)
-    pretty_error("Error on POST", "Cannot send the result object " + result_id)
+    message = "An error occured when sending the result " + str(result_id) + "\n\n Details: \n" + str(reason)
+    OpenLrw.mail_server(" Error Apogee Results", message)
+    logging.error(message)
+    OpenLrw.pretty_error("Error on POST", "Cannot send the result object " + str(result_id))
     sys.exit(0)
 
 
 # -------------- MAIN --------------
 
-JWT = generate_jwt()
+JWT = OpenLrw.generate_jwt()
 
-line_items = get_lineitems(JWT).json()
+line_items = OpenLrw.get_lineitems(JWT)
 
 # Creates a class for Apogee (temporary)
 try:
-    response = requests.post(URI, headers={'Authorization': 'Bearer ' + JWT},
-                             json={'sourcedId': 'unknown_apogee', 'title': 'Apogée'})
-    if response == 500:
-        exit_log('Unable to create the Class "Apogée"', response)
+    OpenLrw.post_class({'sourcedId': 'unknown_apogee', 'title': 'Apogée'}, JWT, False)
+except InternalServerErrorException:
+        exit_log('Unable to create the Class "Apogee"', "Internal Server Error 500")
 except requests.exceptions.ConnectionError as e:
-    exit_log('Unable to create the Class "Apogée"', e)
+    exit_log('Unable to create the Class "Apogee"', e)
 
 f = open(FILE_NAME, 'r')
 
@@ -86,12 +65,8 @@ with f:
         username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], \
                                                                                         row[4], row[5], row[6]
 
-pretty_message("Script finished", "Total number of results sent : " + str(ROWS_NUMBER))
+OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(ROWS_NUMBER))
 
-MAIL = smtplib.SMTP('localhost')
+message = "import_results.py finished its execution in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of results sent : " + str(ROWS_NUMBER)
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Apogée Results script finished \n\n "
-                                                                  "import_results.py finished its execution in " + measure_time() +
-              " seconds \n\n -------------- \n SUMMARY \n -------------- \n" +
-              "Total number of results sent : " + str(ROWS_NUMBER))
-
+OpenLrw.mail_server("Apogee Results script finished", message)

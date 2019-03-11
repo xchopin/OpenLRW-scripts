@@ -26,16 +26,7 @@ DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 
-URI = SETTINGS['api']['uri'] + '/api/classes/'
 COUNTER = 0
-MAIL = None
-
-
-# -------------- FUNCTIONS --------------
-def post_lineitem(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/lineitems?check=false', headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/lineitems - Response: ' + str(response.status_code))
-    return response.status_code
 
 
 def exit_log(lineitem_id, reason):
@@ -44,15 +35,11 @@ def exit_log(lineitem_id, reason):
     :param lineitem_id:
     :param reason:
     """
-    lineitem_id = str(lineitem_id)
-    reason = str(reason)
 
-    MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle line item \n\n An error occured when sending the line item " + lineitem_id + "\n\n Details: \n" + reason
-    db.close()
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("Subject: Error Moodle line item \n\n An error occured when sending the line item" + lineitem_id + "\n\n Details: \n" + reason)
-    pretty_error("Error on POST", "Cannot send the line item object " + lineitem_id)  # It will also exit
+    message = "Error Moodle line item \n\n An error occured when sending the line item " + str(lineitem_id) + "\n\n Details: \n" + str(reason)
+    OpenLrw.mail_server(" Error Moodle line item", message)
+    logging.error(message)
+    OpenLrw.pretty_error("Error on POST", "Cannot send the line item object " + str(lineitem_id))
     sys.exit(0)
 
 
@@ -64,7 +51,7 @@ query.execute("SELECT id, course, name, intro, timeopen, timeclose FROM mdl_quiz
 
 line_items = query.fetchall()
 
-JWT = generate_jwt()
+JWT = OpenLrw.generate_jwt()
 
 for line_item in line_items:
     quiz_id, class_id, name, description, open_date, close_date = line_item
@@ -78,17 +65,20 @@ for line_item in line_items:
         "assignDate": open_date,
         "dueDate": close_date,
         "class": {
-            "sourcedId": class_id
+            "sourcedId": str(class_id)
         }
     }
 
     try:
-        response = post_lineitem(JWT, class_id, json)
-        if response == 401:
-            JWT = generate_jwt()
-            post_lineitem(JWT, class_id, json)
-        elif response == 500:
-            exit_log(quiz_id, response)
+        res = OpenLrw.post_lineitem(class_id, json, JWT, False)
+    except ExpiredTokenException:
+        JWT = OpenLrw.generate_jwt()
+        OpenLrw.post_lineitem(class_id, json, JWT, False)
+    except BadRequestException:
+        OpenLrw.pretty_message("Error", "Check emails for more details")
+        OpenLrw.mail_server("Error Import Lineitems", res.content)
+    except InternalServerErrorException:
+        exit_log(quiz_id, "Internal Server Error 500")
     except requests.exceptions.ConnectionError as e:
         exit_log(quiz_id, e)
 
@@ -113,24 +103,22 @@ for line_item in line_items:
     }
 
     try:
-        response = post_lineitem(JWT, class_id, json)
-        if response == 401:
-            JWT = generate_jwt()
-            post_lineitem(JWT, class_id, json)
-        elif response == 500:
-            exit_log(quiz_id, response)
+        OpenLrw.post_lineitem(class_id, json, JWT, False)
+    except ExpiredTokenException:
+        JWT = OpenLrw.generate_jwt()
+        OpenLrw.post_lineitem(class_id, json, JWT, False)
+    except InternalServerErrorException:
+        exit_log(quiz_id, "Internal Server Error 500")
     except requests.exceptions.ConnectionError as e:
         exit_log(quiz_id, e)
+
 
 COUNTER = COUNTER + len(line_items)
 db.close()
 
-pretty_message("Script finished","Total number of line items sent : " + str(COUNTER))
+OpenLRW.pretty_message("Script finished", "Total number of line items sent : " + str(COUNTER))
 
-MAIL = smtplib.SMTP('localhost')
+message = "import_lineitems.py finished its execution in " + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items sent : " + str(COUNTER)
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
-              "Subject: Moodle line item script finished \n\n import_lineitems.py finished its execution in "
-              + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" +
-              "Total number of line items sent : " + str(COUNTER))
+OpenLrw.mail_server("Moodle line item script finished", message)
 

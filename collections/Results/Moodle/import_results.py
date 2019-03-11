@@ -33,32 +33,17 @@ MAIL = None
 COUNTER = 0
 
 
-# -------------- FUNCTIONS --------------
-def post_result(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/results?check=false', headers={'Authorization': 'Bearer ' + jwt},
-                             json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/results - Response: ' + str(
-        response.status_code))
-    return response.status_code
-
-
 def exit_log(result_id, reason):
     """
     Stops the script and email + logs the last event
     :param result_id:
     :param reason:
     """
-    result_id = str(result_id)
-    reason = str(reason)
-
-    MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle Results \n\n An error occured when sending the result " + result_id + \
-                    "\n\n Details: \n" + reason
     db.close()
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("Subject: Error Moodle Results \n\n An error occured when sending the result " + result_id + \
-                  "\n\n Details: \n" + reason)
-    pretty_error("Error on POST", "Cannot send the result object " + result_id)  # It will also exit
+    message = "An error occured when sending the result " + str(result_id) + "\n\n Details: \n" + str(reason)
+    OpenLrw.mail_server("Error Moodle Results", message)
+    logging.error(message)
+    OpenLRW.pretty_error("Error on POST", "Cannot send the result object " + str(result_id))
     sys.exit(0)
 
 
@@ -73,13 +58,13 @@ query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.tim
 
 results = query.fetchall()
 
-JWT = generate_jwt()
+JWT = OpenLrw.generate_jwt()
 
 for result in results:
     student_id, result_id, lineitem_id, score, date, class_id = result
 
     if date > 0:
-        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S')
+        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S.755Z')
     else:
         date = ""
 
@@ -100,12 +85,15 @@ for result in results:
     }
 
     try:
-        response = post_result(JWT, class_id, json)
-        if response == 401:
-            JWT = generate_jwt()
-            post_result(JWT, class_id, json)
-        elif response == 500:
-            exit_log(result_id, response)
+        response = OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
+    except ExpiredTokenException:
+        JWT = OpenLrw.generate_jwt()
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
+    except BadRequestException as e:
+        print("Error " + str(e.message.content))
+        OpenLrw.mail_server("Error import_results.py", str(e.message.content))
+    except InternalServerErrorException:
+        exit_log(result_id, response)
     except requests.exceptions.ConnectionError as e:
         exit_log(result_id, e)
 
@@ -163,23 +151,24 @@ for result in results:
         }
 
     try:
-        response = post_result(JWT, class_id, json)
-        if response == 401:
-            JWT = generate_jwt()
-            post_result(JWT, class_id, json)
-        elif response == 500:
-            exit_log(result_id, response)
+        response = OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
+    except ExpiredTokenException:
+        JWT = OpenLrw.generate_jwt()
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
+    except BadRequestException:
+        print("Error " + response)
+        OpenLrw.mail_server("Error import_results.py", response)
+    except InternalServerErrorException:
+        exit_log(result_id, response)
     except requests.exceptions.ConnectionError as e:
         exit_log(result_id, e)
 
 COUNTER = COUNTER + len(results)
 db.close()
 
-pretty_message("Script finished",
-               "Total number of results sent : " + str(COUNTER))
+OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
 
-MAIL = smtplib.SMTP('localhost')
+message = "import_results.py finished its execution in " + measure_time() + "seconds " \
+           "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'],
-            "Subject: Moodle Results script finished \n\n import_results.py finished its execution in " + measure_time() + "seconds "
-            "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER))
+OpenLrw.mail_server("Moodle Results script finished", message)

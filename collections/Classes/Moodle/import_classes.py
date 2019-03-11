@@ -15,6 +15,7 @@ import os
 import re
 import requests
 
+
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
@@ -25,35 +26,25 @@ DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
-
-URI = SETTINGS['api']['uri'] + '/api/classes'
-
 MAIL = None
 FILE_PATH = './data/active_classes.txt'
 
 
 # -------------- FUNCTIONS --------------
-def post_class(jwt, data):
-    response = requests.post(URI, headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /classes - Response: ' + str(response.status_code))
-    return response.status_code
-
 
 def exit_log(course_id, reason):
     """
     Stops the script and email + logs the last event
     :param course_id:
     :param reason:
-    :ret
     """
-    MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle Courses \n\n An error occured when sending the course " + course_id + \
-                    "\n\n Details: \n" + str(reason)
+
     db.close()
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
+    message = "An error occured when sending the course " + str(course_id) + "\n\n Details: \n" + str(reason)
+    OpenLrw.mail_server("Subject: Error Moodle Courses", message)
     logging.error("Subject: Error Moodle Courses \n\n An error occured when sending the course " + course_id + \
                   "\n\n Details: \n" + str(reason))
-    pretty_error("Error on POST", "Cannot send the course object " + course_id)  # It will also exit
+    OpenLRW.pretty_error("Error on POST", "Cannot send the course object " + course_id)  # It will also exit
     sys.exit(0)
 
 
@@ -63,7 +54,7 @@ query = db.cursor()
 
 
 if not os.path.isfile(FILE_PATH):
-    pretty_error(FILE_PATH + " does not exist", "You have to create it following the documentation.")
+    OpenLRW.pretty_error(FILE_PATH + " does not exist", "You have to create it following the documentation.")
     exit()
 
 active_classes = []
@@ -92,7 +83,7 @@ for result in results:
 # Query to get all the visible courses
 query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_course WHERE visible = 1")
 
-JWT = generate_jwt()
+JWT = OpenLrw.generate_jwt()
 
 courses = query.fetchall()
 
@@ -110,21 +101,20 @@ for course in courses:
         }
     }
 
-    response = post_class(JWT, json)
-
-    if response == 401:
-        JWT = generate_jwt()
-        post_class(JWT, json)
-    elif response == 500:
-        exit_log(course_id, response)
+    try:
+        OpenLrw.post_class(json, JWT, False)
+    except ExpiredTokenException:
+        JWT = OpenLrw.generate_jwt()
+        OpenLrw.post_class(json, JWT, False)
+    except InternalServerErrorException:
+        exit_log(course_id, "Internal Server Error 500")
 
 db.close()
 
-pretty_message("Script finished",
-               "Total number of courses sent : " + str(len(courses)))
+OpenLRW.pretty_message("Script finished", "Total number of courses sent : " + str(len(courses)))
 
-MAIL = smtplib.SMTP('localhost')
+message = "import_classes.py finished its execution in " + measure_time() + " seconds" \
+          " \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of courses sent : " + str(len(courses))
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle Courses script finished \n\n "
-              "import_classes.py finished its execution in " + measure_time() + " seconds"
-              " \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of courses sent : " + str(len(courses)))
+OpenLrw.mail_server("Subject: Moodle Courses script finished", message)
+

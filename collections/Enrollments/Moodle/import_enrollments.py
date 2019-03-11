@@ -28,19 +28,8 @@ DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 
-URI = SETTINGS['api']['uri'] + '/api/classes/'
-
-MAIL = None
-
 
 # -------------- FUNCTIONS --------------
-def post_enrollment(jwt, class_id, data):
-    response = requests.post(URI + str(class_id) + '/enrollments?check=false',
-                             headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print(Colors.OKBLUE + '[POST]' + Colors.ENDC + '/classes/' + str(class_id) + '/enrollments - Response: ' + str(
-        response.status_code))
-    return response.status_code
-
 
 def exit_log(enrollment_id, reason):
     """
@@ -48,17 +37,12 @@ def exit_log(enrollment_id, reason):
     :param enrollment_id:
     :param reason:
     """
-    enrollment_id = str(enrollment_id)
-    reason = str(reason)
 
-    MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle Enrollments \n\n An error occured when sending the object " + enrollment_id + \
-                    "\n\n Details: \n" + reason
+    message = "An error occured when sending the object " + str(enrollment_id) + "\n\n Details: \n" + str(reason)
     db.close()
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("Subject: Error Moodle Enrollments \n\n An error occured when sending the object " + enrollment_id + \
-                  "\n\n Details: \n" + reason)
-    pretty_error("Error on POST", "Cannot send the enrollment object " + enrollment_id)  # It will also exit
+    OpenLrw.mail_server("Error Moodle Enrollments", message)
+    logging.error(message)
+    OpenLRW.pretty_error("HTTP POST Error", "Cannot send the enrollment object " + str(enrollment_id))
     sys.exit(0)
 
 
@@ -68,10 +52,10 @@ query = db.cursor()
 
 # ----- MAIN -------
 if not (len(sys.argv) > 1):
-    pretty_error("Wrong usage", ["This script requires at least 1 timestamp argument (from)"])
+    OpenLRW.pretty_error("Wrong usage", ["This script requires at least 1 timestamp argument (from)"])
 else:
     if not re.match(TIMESTAMP_REGEX, sys.argv[1]):
-        pretty_error("Wrong usage", ["Argument must be a timestamp (from)"])
+        OpenLRW.pretty_error("Wrong usage", ["Argument must be a timestamp (from)"])
 
 query.execute("SELECT assignment.id, user.username, context.instanceid, assignment.userid, assignment.roleid  "
               "FROM mdl_role_assignments as assignment, mdl_context as context, mdl_user as user "
@@ -81,7 +65,7 @@ query.execute("SELECT assignment.id, user.username, context.instanceid, assignme
 
 enrollments = query.fetchall()
 
-JWT = generate_jwt()
+JWT = OpenLrw.generate_jwt()
 
 for enrollment in enrollments:
     enrollment_id, username, class_id, user_id, role = enrollment
@@ -96,27 +80,26 @@ for enrollment in enrollments:
     }
 
     try:
-        response = post_enrollment(JWT, class_id, json)
-        if response == 401:
-            JWT = generate_jwt()
-            post_enrollment(JWT, class_id, json)
-        elif response == 500:
-            exit_log(enrollment_id, "Error 500")
         time.sleep(0.01)
+        OpenLrw.post_enrollment(class_id, json, JWT, False)
+    except ExpiredTokenException:
+        JWT = OpenLrw.generate_jwt()
+        OpenLrw.post_enrollment(class_id, json, JWT, False)
+    except InternalServerErrorException:
+        exit_log(enrollment_id, "Error 500")
     except requests.exceptions.ConnectionError as e:
         time.sleep(0.5)
-        try: # last try
-            response = post_enrollment(JWT, class_id, json)
+        try:  # last try
+            OpenLrw.post_enrollment(class_id, json, JWT, False)
         except requests.exceptions.ConnectionError as e:
             exit_log(enrollment_id, e)
 
 db.close()
 
-pretty_message("Script finished",
-               "Total number of enrollments sent : " + str(len(enrollments)))
+OpenLRW.pretty_message("Script finished", "Total number of enrollments sent : " + str(len(enrollments)))
 
-MAIL = smtplib.SMTP('localhost')
+message = "import_enrollments.py finished its execution in " + measure_time() + " seconds " \
+          "\n\n -------------- \n SUMMARY \n -------------- \n Total number of enrollments sent : "\
+          + str(len(enrollments))
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle Enrollments script finished \n\n "
-              "import_enrollments.py finished its execution in " + measure_time() + " seconds "
-              "\n\n -------------- \n SUMMARY \n -------------- \n Total number of enrollments sent : " + str(len(enrollments)))
+OpenLrw.mail_server("Subject: Moodle Enrollments script finished", message)

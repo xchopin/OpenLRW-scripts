@@ -35,7 +35,6 @@ DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
-MAIL = None
 
 COUNTER_JSON_SENT = 0
 TOTAL_EVENT = 0
@@ -108,21 +107,18 @@ def get_quiz_name(quiz_id):
 def exit_log(object_id, timestamp, reason):
     """
     Stops the script and email + logs the last event
-    :param statement:
     :param object_id:
     :param timestamp:
-    :ret
+    :param reason
     """
-    MAIL = smtplib.SMTP('localhost')
-    email_message = "Subject: Error Moodle Events \n\n An error occured when sending the event #" + object_id +\
-                    " created at " + timestamp + "\n\n Details: \n" + str(reason)
     db.close()
     db_log.close()
-    MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], email_message)
-    logging.error("An error occured at " + strftime("%Y-%m-%d %H:%M:%S",gmtime()) + " - Event #" + object_id +
-                  " created at " + timestamp + "\n\n Details: \n" + str(reason))
-    pretty_error("Error on POST",
-                 "Cannot send statement for event #" + object_id + " created at " + timestamp)  # It will also exit
+    message = "An error occured at " + strftime("%Y-%m-%d %H:%M:%S",gmtime()) + " - Event #" + str(object_id)\
+              + " created at " + str(timestamp) + "\n\n Details: \n" + str(reason)
+
+    logging.error(message)
+    OpenLrw.mail_server("Error " + str(sys.argv[0]), message)
+    OpenLRW.pretty_error("Error on POST", "Cannot send statement for event #" + str(object_id) + " created at " + str(timestamp))
     sys.exit(0)
 
 
@@ -136,9 +132,9 @@ def prevent_caliper_error(statement, object_id, timestamp):
     """
 
     try:
-        response_code = send_caliper_statement(statement)
-        if response_code != 200:
-            exit_log(object_id, timestamp, response_code)
+        response_code = OpenLrw.send_caliper(statement)
+    except OpenLRWClientException as e:
+        exit_log(object_id, timestamp, e.message)
     except requests.exceptions.ConnectionError as e:
         exit_log(object_id, timestamp, e)
 
@@ -146,17 +142,17 @@ def prevent_caliper_error(statement, object_id, timestamp):
 
 
 if not (len(sys.argv) > 1):
-    pretty_error("Wrong usage", ["This script requires 1 or 2 arguments (timestamps: FROM - TO)"])
+    OpenLRW.pretty_error("Wrong usage", ["This script requires 1 or 2 arguments (timestamps: FROM - TO)"])
 elif (len(sys.argv) == 2):
     if (re.match(TIMESTAMP_REGEX, sys.argv[1])):
         sql_where = "WHERE timecreated >= " + sys.argv[1]
     else:
-        pretty_error("Wrong usage", ["Argument must be a timestamp (FROM)"])
+        OpenLRW.pretty_error("Wrong usage", ["Argument must be a timestamp (FROM)"])
 else:
     if (re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2])):
         sql_where = "WHERE timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
     else:
-        pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+        OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
 
 # Création d'un dictionnaire avec les id moodle et les logins UL
 query.execute("SELECT id, username FROM mdl_user WHERE deleted=0 AND username LIKE '%u';")
@@ -316,12 +312,8 @@ for row_log in rows_log:
 
 db.close()
 db_log.close()
-pretty_message("Script finished",
-               "Total number of events : " + str(TOTAL_EVENT) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
 
-MAIL = smtplib.SMTP('localhost')
+OpenLRW.pretty_message("Script executed", "Total number of events : " + str(TOTAL_EVENT) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
 
-MAIL.sendmail(SETTINGS['email']['from'], SETTINGS['email']['to'], "Subject: Moodle Events script finished \n\n "
-              "import_events.py finished its execution in " + measure_time() +
-              " seconds \n\n -------------- \n SUMMARY \n -------------- \n" +
-              "Total number of events : " + str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT))
+message = sys.argv[0] + " finished its execution in " + measure_time() +" seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of events : " + str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
+OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)

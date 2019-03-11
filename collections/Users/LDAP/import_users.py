@@ -8,38 +8,17 @@ __version__ = "1.0.1"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-import requests, json
+import json
 import sys, os
-sys.path.append(os.path.dirname(__file__) + '/../..')
+sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
 logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=logging.DEBUG)
 
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']
-URI = SETTINGS['api']['uri'] + '/api/'
 ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
-
-
-# -------------- FUNCTIONS --------------
-def post_user(jwt, data, check):
-    check = 'false' if check is False else 'true'
-    response = requests.post(URI + '/users?check=' + check, headers={'Authorization': 'Bearer ' + jwt}, json=data)
-    print Colors.OKBLUE + '[POST]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
-    return response.status_code != 401  # if token expired
-
-
-def get_users(jwt):
-    response = requests.get(URI + '/users', headers={'Authorization': 'Bearer ' + jwt})
-    print Colors.OKGREEN + '[GET]' + Colors.ENDC + ' /users - Response: ' + str(response.status_code)
-    return False if response.status_code == 401 else response.content  # if token expired
-
-
-def delete_user(jwt, user_id):
-    response = requests.delete(URI + '/users/' + user_id, headers={'Authorization': 'Bearer ' + jwt})
-    print Colors.FAIL + '[DELETE]' + Colors.ENDC + ' /users/' + user_id + ' - Response: ' + str(response.status_code)
-    return response.status_code != 401  # if token expired
-
+COUNTER = 0
 
 def populate(check, jwt):
     """
@@ -48,22 +27,21 @@ def populate(check, jwt):
     :param jwt: JSON Web Token for OpenLRW
     :return: void
     """
-    pretty_message('Initializing', 'Will soon populate the mongoUser collection')
+    OpenLRW.pretty_message('Initializing', 'Will soon populate the mongoUser collection')
     controls = create_ldap_controls(SETTINGS['ldap']['page_size'])
     while 1 < 2:  # hi deadmau5
         try:
             # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
             users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, 'uid=*', ATTRLIST, serverctrls=[controls])
         except ldap.LDAPError as e:
-            pretty_error('LDAP search failed', '%s' % e)
+            OpenLRW.pretty_error('LDAP search failed', '%s' % e)
 
         try:
             rtype, rdata, ruser, server_ctrls = l.result3(users)  # Pull the results from the search request
         except ldap.LDAPError as e:
-            pretty_error('Couldn\'t pull LDAP results', '%s' % e)
+            OpenLRW.pretty_error('Couldn\'t pull LDAP results', '%s' % e)
 
         for dn, attributes in rdata:
-
             if 'businessCategory' not in attributes:
                 print attributes['uid'][0]
                 continue
@@ -76,9 +54,12 @@ def populate(check, jwt):
                 }
             }
 
-            if not post_user(jwt, json, check):
-                jwt = generate_jwt()
-                post_user(jwt, json, check)
+            try:
+                OpenLrw.post_user(json, jwt, check)
+                COUNTER = COUNTER + 1
+            except ExpiredTokenException:
+                jwt = OpenLrw.generate_jwt()
+                OpenLrw.post_user(json, jwt, check)
 
         # Get cookie for next request
         pctrls = get_ldap_controls(server_ctrls)
@@ -94,7 +75,7 @@ def populate(check, jwt):
 
 # -------------- MAIN --------------
 if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):  # Checking args
-    pretty_error(
+    OpenLRW.pretty_error(
         "Wrong usage",
         ["reset: clears the user collection then imports them without checking duplicates", "update: imports new users"]
     )
@@ -106,27 +87,36 @@ try:
     l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
     l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
 except ldap.LDAPError as e:
-    pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
+    OpenLRW.pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
 
 try:
     l.simple_bind_s(SETTINGS['ldap']['user'], SETTINGS['ldap']['password'])
 except ldap.LDAPError as e:
-    pretty_error('LDAP bind failed', '%s' % e)
+    OpenLRW.pretty_error('LDAP bind failed', '%s' % e)
 
-jwt = generate_jwt()
+jwt = OpenLrw.generate_jwt()
 
 if sys.argv[1] == 'reset':  # Deletes evey users and inserts them
-    users = get_users(jwt)
+    users = OpenLrw.get_users(jwt)
     if users:  # It shouldn't expire but it's better to check
         data = json.loads(users)
         for row in data:
-            if not delete_user(jwt, row['user']['sourcedId']):
-                jwt = generate_jwt()
-                delete_user(jwt, row['user']['sourcedId'])
+            try:
+                OpenLrw.delete_user(row['user']['sourcedId'], jwt)
+            except OpenLRWClientException:
+                jwt = OpenLrw.generate_jwt()
+                OpenLrw.delete_user(row['user']['sourcedId'], jwt)
     else:
-        pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
+        OpenLRW.pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
     populate(False, jwt)
 elif sys.argv[1] == 'update':
     populate(True, jwt)
+
+
+OpenLRW.pretty_message("Script finished", "Total number of line items sent : " + str(COUNTER))
+
+message = str("LDAP Users imported in " + measure_time() + " seconds")
+
+OpenLrw.mail_server(str(sys.argv[0]) + " summary", message)
 
 sys.exit(0)
