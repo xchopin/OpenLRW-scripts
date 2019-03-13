@@ -9,7 +9,6 @@ __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
 import MySQLdb
-import datetime
 import sys
 import os
 import requests
@@ -55,8 +54,8 @@ JWT = OpenLrw.generate_jwt()
 
 for line_item in line_items:
     quiz_id, class_id, name, description, open_date, close_date = line_item
-    open_date = datetime.datetime.fromtimestamp(open_date).strftime('%Y-%m-%dT%H:%M:%S') if open_date > 0 else None
-    close_date = datetime.datetime.fromtimestamp(close_date).strftime('%Y-%m-%dT%H:%M:%S') if close_date > 0 else None
+    open_date = datetime.datetime.fromtimestamp(open_date).strftime('%Y-%m-%dT%H:%M:%S.755Z') if open_date > 0 else None
+    close_date = datetime.datetime.fromtimestamp(close_date).strftime('%Y-%m-%dT%H:%M:%S.755Z') if close_date > 0 else None
 
     json = {
         "sourcedId": "quiz_" + str(quiz_id),
@@ -65,18 +64,18 @@ for line_item in line_items:
         "assignDate": open_date,
         "dueDate": close_date,
         "class": {
+            "type": "quiz",
             "sourcedId": str(class_id)
         }
     }
 
     try:
-        res = OpenLrw.post_lineitem(class_id, json, JWT, False)
+        res = OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_lineitem(class_id, json, JWT, False)
-    except BadRequestException:
-        OpenLrw.pretty_message("Error", "Check emails for more details")
-        OpenLrw.mail_server("Error Import Lineitems", res.content)
+        OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
+    except BadRequestException as e:
+        exit_log(quiz_id, e.message.content)
     except InternalServerErrorException:
         exit_log(quiz_id, "Internal Server Error 500")
     except requests.exceptions.ConnectionError as e:
@@ -85,6 +84,8 @@ for line_item in line_items:
 COUNTER = len(line_items)
 
 
+line_items = {}  # Clears buffer
+
 # Active quiz
 query.execute("SELECT id, course, name, intro, scale FROM mdl_activequiz")
 
@@ -92,7 +93,6 @@ line_items = query.fetchall()
 
 for line_item in line_items:
     quiz_id, class_id, name, description, scale = line_item
-
     json = {
         "sourcedId": "active_quiz_" + str(quiz_id),
         "title": name,
@@ -100,13 +100,19 @@ for line_item in line_items:
         "class": {
             "sourcedId": class_id
         },
+        "metadata": {
+            "type": "activequiz",
+            "resultValueMax": str(scale)
+        }
     }
 
     try:
-        OpenLrw.post_lineitem(class_id, json, JWT, False)
+        OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_lineitem(class_id, json, JWT, False)
+        OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
+    except BadRequestException as e:
+        exit_log(quiz_id, e.message.content)
     except InternalServerErrorException:
         exit_log(quiz_id, "Internal Server Error 500")
     except requests.exceptions.ConnectionError as e:
@@ -118,7 +124,7 @@ db.close()
 
 OpenLRW.pretty_message("Script finished", "Total number of line items sent : " + str(COUNTER))
 
-message = "import_lineitems.py finished its execution in " + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items sent : " + str(COUNTER)
+message = str(sys.argv[0]) + " finished its execution in " + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items sent : " + str(COUNTER)
 
-OpenLrw.mail_server("Moodle line item script finished", message)
+OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
 
