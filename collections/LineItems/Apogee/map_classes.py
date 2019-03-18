@@ -15,58 +15,86 @@ import requests
 import datetime
 import csv
 import uuid
-
+import json
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
 logging.basicConfig(filename=os.path.dirname(__file__) + '/map_classes.log', level=logging.ERROR)
 
+COUNTER = 0
+GRADES_FILE = 'data/LineItems/mapping.csv'
 
 
-# -------------- GLOBAL --------------
-ROWS_NUMBER = 0
-FILE_NAME = 'data/mapping.csv'
-
-
-def exit_log(result_id, reason):
+def exit_log(reason):
     """
     Stops the script and email + logs the last event
     :param result_id:
     :param reason:
     """
-    message = "An error occured when sending the result " + str(result_id) + "\n\n Details: \n" + str(reason)
-    OpenLrw.mail_server(" Error Apogee Results", message)
+    message = "An error occured: " + str(reason)
+    OpenLrw.mail_server("Error " + sys.argv[0], message)
     logging.error(message)
-    OpenLrw.pretty_error("Error on POST", "Cannot send the result object " + str(result_id))
+    OpenLrw.pretty_error("Error on POST", "Check the email content or the log file")
     sys.exit(0)
 
 
 # -------------- MAIN --------------
 
+
+OpenLRW.pretty_message("CSV File used for the import", GRADES_FILE)
+
 JWT = OpenLrw.generate_jwt()
 
-line_items = OpenLrw.get_lineitems(JWT)
 
-# Creates a class for Apogee (temporary)
-try:
-    OpenLrw.post_class({'sourcedId': 'unknown_apogee', 'title': 'Apogée'}, JWT, False)
-except InternalServerErrorException:
-        exit_log('Unable to create the Class "Apogee"', "Internal Server Error 500")
-except requests.exceptions.ConnectionError as e:
-    exit_log('Unable to create the Class "Apogee"', e)
+results = OpenLrw.oneroster_get('/api/classes/unknown_apogee/results', JWT)
+classes = OpenLrw.oneroster_get('/api/classes', JWT)
 
-f = open(FILE_NAME, 'r')
+results = json.loads(results)
+classes = json.loads(classes)
 
-# - - - - PARSING THE CSV FILE - - - -
-with f:
-    reader = csv.reader(f, delimiter=";")
-    ROWS_NUMBER = sum(1 for line in open(FILE_NAME))
-    for row in reader:
-        username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], \
-                                                                                        row[4], row[5], row[6]
+classes_with_bali = []
+for klass in classes:
+    try:
+        if klass['klass']['metadata']["populationBali"]:
+            classes_with_bali.append(klass)
+    except TypeError:
+        pass  # population is not defined, we don't care
+results_to_fix = []
+for result in results:
+    lineItem = {'sourcedId': result['lineitem']['sourcedId']}
+    if lineItem not in results_to_fix:
+        results_to_fix.append(lineItem)
 
-OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(ROWS_NUMBER))
+# Parse the file to get the "ELP" element in the first by matching the LineItem sourcedId
+f1 = open(GRADES_FILE, 'r')
+with f1:
+    c1 = csv.reader(f1, delimiter=";")
+    for row in c1:
+        dip, vet, elp, per, ses, gpe = row[0], row[1], row[2], row[3], row[4], row[5]
+        for lineItem in results_to_fix:
+            if lineItem["sourcedId"] in elp:
+                for klass in classes_with_bali:
+                    bali = klass["klass"]["metadata"]["populationBali"]
+                    if vet in bali or elp in bali:
+                        response = OpenLrw.get_lineitem(lineItem['sourcedId'], JWT)
+                        item = json.loads(response)
+                        lineItem['title'] = item['lineItem']['title']
+                        data = {
+                            "sourcedId": lineItem["sourcedId"],
+                            "class": {
+                                "sourcedId": klass["classSourcedId"],
+                                "title": lineItem["title"]
+                            }
+                        }
+                        OpenLrw.post_lineitem(data, JWT, True)
+                        COUNTER += 1
+                        break
+                results_to_fix.remove(lineItem)
 
-message = "import_results.py finished its execution in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of results sent : " + str(ROWS_NUMBER)
 
-OpenLrw.mail_server("Apogee Results script finished", message)
+
+OpenLrw.pretty_message("Script finished", "Total number of line items edited : " + str(COUNTER))
+
+message = sys.argv[0] + "(Mapping Apogée CSV and Results) executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items edited : " + str(COUNTER)
+
+OpenLrw.mail_server(sys.argv[0] + " executed", message)
