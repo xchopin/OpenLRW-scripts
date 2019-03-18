@@ -6,4 +6,4 @@ logs/*
 !logs/.gitkeep
 .idea/*
 data/*
-!data/.gitkeep
+!data/*.gitkeep
