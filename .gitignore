@@ -5,5 +5,4 @@ bootstrap/settings.yml
 logs/*
 !logs/.gitkeep
 .idea/*
-data/*
-!data/*.gitkeep
+*.csv
