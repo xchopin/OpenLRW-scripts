@@ -1,9 +1,0 @@
-# Les cours ci dessous seront actifs, les autres seront désactivés
-# Si aucun cours n'est listé ci dessous alors tous les cours seront activés
-15445454
-25000
-45454  # commentaire vérifier qu'on prenne que le nombre
-44
-# Ci dessous les cours informatiques
-1245
-47884
