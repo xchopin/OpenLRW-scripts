@@ -8,12 +8,14 @@ __version__ = "1.0.0"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-import MySQLdb
 import datetime
 import sys
 import os
 import requests
 import datetime
+import csv
+import uuid
+import json
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -21,16 +23,12 @@ from bootstrap.helpers import *
 logging.basicConfig(filename=os.path.dirname(__file__) + '/import_results.log', level=logging.ERROR)
 
 # -------------- GLOBAL --------------
-DB_HOST = SETTINGS['db_moodle']['host']
-DB_NAME = SETTINGS['db_moodle']['name']
-DB_USERNAME = SETTINGS['db_moodle']['username']
-DB_PASSWORD = SETTINGS['db_moodle']['password']
-
-URI = SETTINGS['api']['uri'] + '/api/classes/'
-
+URI = SETTINGS['api']['uri'] + '/api'
+RESULT_COUNTER = 0
+LINEITEM_COUNTER = 0
 MAIL = None
-
-COUNTER = 0
+FILE_NAME = 'data/Results/Notes_IC0_2018.csv'
+RESULT_NAMES = 'data/Results/name.csv'
 
 
 def exit_log(result_id, reason):
@@ -39,136 +37,123 @@ def exit_log(result_id, reason):
     :param result_id:
     :param reason:
     """
-    db.close()
+    subject = "Error Apogée Results"
     message = "An error occured when sending the result " + str(result_id) + "\n\n Details: \n" + str(reason)
-    OpenLrw.mail_server("Error Moodle Results", message)
+    OpenLrw.mail_server(subject, message)
     logging.error(message)
-    OpenLRW.pretty_error("Error on POST", "Cannot send the result object " + str(result_id))
+    OpenLrw.pretty_error("Error on POST", "Cannot send the result object " + str(result_id))
     sys.exit(0)
 
 
-# -------------- DATABASES --------------
-db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
-query = db.cursor()
-
-# Query to get quizzes
-query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified, quiz.course"
-              " FROM mdl_user as users, mdl_quiz_grades as grades, mdl_quiz as quiz"
-              " WHERE grades.quiz = quiz.id AND users.id = grades.userid")
-
-results = query.fetchall()
+# -------------- MAIN --------------
+OpenLRW.pretty_message("CSV Files used for the import", FILE_NAME + " | " + RESULT_NAMES)
 
 JWT = OpenLrw.generate_jwt()
+line_items = json.loads(OpenLrw.get_lineitems(JWT))
 
-for result in results:
-    student_id, result_id, lineitem_id, score, date, class_id = result
+# Create a temporary class
+try:
+    response = requests.post(URI, headers={'Authorization': 'Bearer ' + JWT}, json={'sourcedId': 'unknown_apogee', 'title': 'Apogée temporaire'})
+    if response == 500:
+        exit_log('Unable to create the Class "Apogée"', response)
+except requests.exceptions.ConnectionError as e:
+    exit_log('Unable to create the Class "Apogée"', e)
 
-    if date > 0:
-        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S.755Z')
-    else:
-        date = ""
+f1 = open(FILE_NAME, 'r')
 
-    json = {
-        'sourcedId': result_id,
-        'score': str(score),
-        'date': date,
-        'student': {
-            'sourcedId': student_id
-        },
-        'lineitem': {
-            'sourcedId': 'quiz_' + str(lineitem_id)
-        },
-        'metadata': {
-            'category': 'Moodle',
-            'type': 'quiz'
-        }
-    }
+mapping = list(csv.reader(open(RESULT_NAMES, "rb"), delimiter=';'))
+# - - - - PARSING THE CSV FILE - - - -
+with f1:
+        c1 = csv.reader(f1, delimiter=";")
+        for row in c1:
+            username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
 
-    try:
-        response = OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
-    except ExpiredTokenException:
-        JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
-    except BadRequestException as e:
-        print("Error " + str(e.message.content))
-        OpenLrw.mail_server("Error import_results.py", str(e.message.content))
-    except InternalServerErrorException:
-        exit_log(result_id, response)
-    except requests.exceptions.ConnectionError as e:
-        exit_log(result_id, e)
+            for x in range(7, len(row)):  # grades
+                data = row[x].split('-')
+                grade = {'type': data[0], 'exam_id': data[1], 'score': data[2], 'status': None}
+                if len(data) > 3:
+                    grade['status'] = data[3]
 
-COUNTER = len(results)
+                json = {
+                    'sourcedId': str(uuid.uuid4()),
+                    'score': str(grade['score']),
+                    'resultStatus': grade['status'],
+                    'student': {
+                        'sourcedId': username
+                    },
+                    'lineitem': {
+                        'sourcedId': grade['exam_id']
+                    },
+                    'metadata': {
+                        'type': grade['type'],
+                        'year': year,
+                        'category': 'Apogée'
+                    }
+                }
 
-# Query to get active quizzes
-query.execute(
-    "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified, activequiz.course"
-    " FROM mdl_user as users, mdl_activequiz as activequiz, mdl_grade_grades as grades, mdl_grade_items as items"
-    " WHERE grades.itemid = items.id AND items.courseid = activequiz.course"
-    " AND users.id = grades.userid AND grades.finalgrade is NOT NULL")
+                # Let's send the result object
+                RESULT_COUNTER = RESULT_COUNTER + 1
 
-results = query.fetchall()
+                try:
+                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, False)  # It makes no sense to check since it's a random sourcedId
+                except ExpiredTokenException:
+                    JWT = OpenLrw.generate_jwt()
+                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, False)
+                except BadRequestException as e:
+                    exit_log(grade['exam_id'], e.message.content)
+                except InternalServerErrorException as e:
+                    exit_log(grade['exam_id'], e.message.content)
+                except requests.exceptions.ConnectionError as e:
+                    exit_log('Unable to create the Class "Apogée"', e)
 
-for result in results:
-    student_id, result_id, lineitem_id, score, feedback, date, class_id = result
+                # Does the lineItem exist?
+                res = False
 
-    if date > 0:
-        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S')
-    else:
-        date = ""
+                for i in range(0, len(line_items)):
+                    if line_items[i]['lineItem']['sourcedId'] == grade['exam_id']:
+                        res = True
+                        break
 
-    if feedback == None:
-        json = {
-            'sourcedId': result_id,
-            'score': str(score),
-            'date': date,
-            'student': {
-                'sourcedId': student_id
-            },
-            'lineitem': {
-                'sourcedId': 'active_quiz_' + str(lineitem_id)
-            },
-            'metadata': {
-                'category': 'Moodle',
-                'type': 'active_quiz'
-            }
-        }
-    else:
-        json = {
-            'sourcedId': result_id,
-            'score': str(score),
-            'date': date,
-            'student': {
-                'sourcedId': student_id
-            },
-            'lineitem': {
-                'sourcedId': 'active_quiz_' + str(lineitem_id)
-            },
-            'metadata': {
-                'category': 'Moodle',
-                'type': 'active_quiz',
-                'feedback': feedback
-            }
-        }
+                # If it does not we will create it
+                if not res:
 
-    try:
-        response = OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
-    except ExpiredTokenException:
-        JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
-    except BadRequestException:
-        print("Error " + response)
-        OpenLrw.mail_server("Error import_results.py", response)
-    except InternalServerErrorException:
-        exit_log(result_id, response)
-    except requests.exceptions.ConnectionError as e:
-        exit_log(result_id, e)
+                    title = "null"
+                    for line in mapping:
+                        code_elp, name, etp = line
+                        if code_elp == grade['exam_id']:
+                            title = name
 
-COUNTER = COUNTER + len(results)
-db.close()
+                    item = {
+                        "sourcedId": grade['exam_id'],
+                        "lineItem": {
+                            "sourcedId": grade['exam_id']
+                        },
+                        "title": title,
+                        "description": "null",
+                        "assignDate": "",
+                        "dueDate": "",
+                        "class": {
+                            "sourcedId": "unknown_apogee"
+                        }
+                    }
 
-OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
+                    # Add new line item to the dynamic array
+                    line_items.append(item)
+                    LINEITEM_COUNTER = LINEITEM_COUNTER + 1
+                    try:
+                        OpenLrw.post_lineitem(item, JWT, False)
+                    except ExpiredTokenException:
+                        JWT = OpenLrw.generate_jwt()
+                        OpenLrw.post_lineitem(item, JWT, False)
+                    except InternalServerErrorException:
+                        exit_log(grade['exam_id'], response)
+                    except requests.exceptions.ConnectionError as e:
+                        exit_log('Unable to create the LineItem ' + grade['exam_id'], e)
 
-message = "import_results.py finished its execution in " + measure_time() + "seconds " \
-           "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
 
-OpenLrw.mail_server("Moodle Results script finished", message)
+OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER) + " - LineItems sent: " + str(LINEITEM_COUNTER))
+message = "import_results.py finished its execution in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
+          + " Results sent : " + str(RESULT_COUNTER) + " - LineItems sent : " + str(LINEITEM_COUNTER)
+OpenLrw.mail_server(sys.argv[0] + " executed", message)
+
+
