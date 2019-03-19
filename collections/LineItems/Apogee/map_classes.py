@@ -59,19 +59,21 @@ for klass in classes:
             classes_with_bali.append(klass)
     except TypeError:
         pass  # population is not defined, we don't care
-results_to_fix = []
+lineitems_to_fix = []
 for result in results:
     lineItem = {'sourcedId': result['lineitem']['sourcedId']}
-    if lineItem not in results_to_fix:
-        results_to_fix.append(lineItem)
+    if lineItem not in lineitems_to_fix:
+        lineitems_to_fix.append(lineItem)
 
+
+LINEITEM_TOTAL = len(lineitems_to_fix)
 # Parse the file to get the "ELP" element in the first by matching the LineItem sourcedId
 f1 = open(GRADES_FILE, 'r')
 with f1:
     c1 = csv.reader(f1, delimiter=";")
     for row in c1:
         dip, vet, elp, per, ses, gpe = row[0], row[1], row[2], row[3], row[4], row[5]
-        for lineItem in results_to_fix:
+        for lineItem in lineitems_to_fix:
             if lineItem["sourcedId"] in elp:
                 for klass in classes_with_bali:
                     bali = klass["klass"]["metadata"]["populationBali"]
@@ -86,15 +88,23 @@ with f1:
                                 "title": lineItem["title"]
                             }
                         }
-                        OpenLrw.post_lineitem(data, JWT, True)
-                        COUNTER += 1
-                        break
-                results_to_fix.remove(lineItem)
 
+                        COUNTER = COUNTER + 1
+                        try:
+                            OpenLrw.post_lineitem(data, JWT, True)
+                        except ExpiredTokenException:
+                            JWT = OpenLrw.generate_jwt()
+                            OpenLrw.post_lineitem(data, JWT, True)
+                        except InternalServerErrorException as e:
+                            exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e.message.content)
+                        except requests.exceptions.ConnectionError as e:
+                            exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e)
+                        break
+                lineitems_to_fix.remove(lineItem)
 
 
 OpenLrw.pretty_message("Script finished", "Total number of line items edited : " + str(COUNTER))
 
-message = sys.argv[0] + "(Mapping Apogée CSV and Results) executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items edited : " + str(COUNTER)
+message = sys.argv[0] + "(Mapping Apogée CSV and Results) executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "LineItems edited : " + str(COUNTER) + " on " + str(LINEITEM_TOTAL)
 
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
