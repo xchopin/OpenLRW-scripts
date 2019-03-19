@@ -27,7 +27,7 @@ DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 MAIL = None
-FILE_PATH = './data/active_classes.txt'
+FILE_PATH = './data/Classes/active_classes.txt'
 
 
 # -------------- FUNCTIONS --------------
@@ -54,7 +54,7 @@ query = db.cursor()
 
 
 if not os.path.isfile(FILE_PATH):
-    OpenLRW.pretty_error(FILE_PATH + " does not exist", "You have to create it following the documentation.")
+    OpenLRW.pretty_error(FILE_PATH + " does not exist", "You have to create it, check the documentation.")
     exit()
 
 active_classes = []
@@ -89,32 +89,46 @@ courses = query.fetchall()
 
 for course in courses:
     course_id, identifier, title, last_modified, summary = course
-    json = {
-        'sourcedId': course_id,
-        'title': title,
-        'status': 'active' if course_id in active_classes else 'inactive',
-        'metadata': {
-            'summary': summary,
-            'lastModified': last_modified,
-            'classCode': identifier if identifier != '' else None,
-            'populationBali': population[course_id] if course_id in population else None
+
+    if len(active_classes) == 0:
+        json = {
+            'sourcedId': course_id,
+            'title': title,
+            'status': 'active',
+            'metadata': {
+                'summary': summary,
+                'lastModified': last_modified,
+                'classCode': identifier if identifier != '' else None,
+                'populationBali': population[course_id] if course_id in population else None
+            }
         }
-    }
+    else:
+        json = {
+            'sourcedId': course_id,
+            'title': title,
+            'status': 'active' if course_id in active_classes else 'inactive',
+            'metadata': {
+                'summary': summary,
+                'lastModified': last_modified,
+                'classCode': identifier if identifier != '' else None,
+                'populationBali': population[course_id] if course_id in population else None
+            }
+        }
 
     try:
-        OpenLrw.post_class(json, JWT, False)
+        OpenLrw.post_class(json, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_class(json, JWT, False)
+        OpenLrw.post_class(json, JWT, True)
     except InternalServerErrorException:
         exit_log(course_id, "Internal Server Error 500")
 
 db.close()
 
-OpenLRW.pretty_message("Script finished", "Total number of courses sent : " + str(len(courses)))
+OpenLRW.pretty_message("Script executed", "Classes sent : " + str(len(courses)))
 
-message = "import_classes.py finished its execution in " + measure_time() + " seconds" \
-          " \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of courses sent : " + str(len(courses))
+message = sys.argv[0] + "executed in " + measure_time() + " seconds" \
+          " \n\n -------------- \n SUMMARY \n -------------- \n" + str(len(courses)) + " classes sent"
 
-OpenLrw.mail_server("Subject: Moodle Courses script finished", message)
+OpenLrw.mail_server(sys.argv[0] + " executed", message)
 
