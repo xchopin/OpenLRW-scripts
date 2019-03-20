@@ -85,15 +85,15 @@ for result in results:
     }
 
     try:
-        response = OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
         OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
     except BadRequestException as e:
         print("Error " + str(e.message.content))
         OpenLrw.mail_server("Error import_results.py", str(e.message.content))
-    except InternalServerErrorException:
-        exit_log(result_id, response)
+    except InternalServerErrorException as e:
+        exit_log(result_id, str(e.message.content))
     except requests.exceptions.ConnectionError as e:
         exit_log(result_id, e)
 
@@ -151,15 +151,15 @@ for result in results:
         }
 
     try:
-        response = OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
-    except BadRequestException:
-        print("Error " + response)
-        OpenLrw.mail_server("Error import_results.py", response)
-    except InternalServerErrorException:
-        exit_log(result_id, response)
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+    except BadRequestException as e:
+        print("Error " + str(e.message.content))
+        OpenLrw.mail_server("Error import_results.py", str(e.message.content))
+    except InternalServerErrorException as e:
+        exit_log(result_id, str(e.message.content))
     except requests.exceptions.ConnectionError as e:
         exit_log(result_id, e)
 
@@ -168,7 +168,7 @@ db.close()
 
 OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
 
-message = "import_results.py finished its execution in " + measure_time() + "seconds " \
+message = sys.argv[0] + " executed in " + measure_time() + "seconds " \
            "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
 
-OpenLrw.mail_server("Moodle Results script finished", message)
+OpenLrw.mail_server(sys.argv[0] + " executed", message)
