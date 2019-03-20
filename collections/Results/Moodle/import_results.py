@@ -151,10 +151,10 @@ for result in results:
         }
 
     try:
-        OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+        OpenLrw.post_result_for_a_class(class_id, json, JWT, False)
     except BadRequestException as e:
         print("Error " + str(e.message.content))
         OpenLrw.mail_server("Error import_results.py", str(e.message.content))
