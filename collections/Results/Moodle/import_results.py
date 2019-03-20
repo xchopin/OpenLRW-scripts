@@ -32,7 +32,6 @@ MAIL = None
 
 COUNTER = 0
 
-
 def exit_log(result_id, reason):
     """
     Stops the script and email + logs the last event
@@ -112,7 +111,7 @@ for result in results:
     student_id, result_id, lineitem_id, score, feedback, date, class_id = result
 
     if date > 0:
-        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S')
+        date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S.755Z')
     else:
         date = ""
 
