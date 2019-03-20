@@ -116,7 +116,7 @@ for result in results:
     else:
         date = ""
 
-    if feedback == None:
+    if feedback is None:
         json = {
             'sourcedId': result_id,
             'score': str(score),
