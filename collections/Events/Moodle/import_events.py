@@ -132,24 +132,24 @@ def prevent_caliper_error(statement, object_id, timestamp):
     """
 
     try:
-        response_code = OpenLrw.send_caliper(statement)
+        OpenLrw.send_caliper(statement)
     except OpenLRWClientException as e:
-        exit_log(object_id, timestamp, e.message)
+        exit_log(object_id, timestamp, str(e.message.content))
     except requests.exceptions.ConnectionError as e:
         exit_log(object_id, timestamp, e)
 
     # -------------- MAIN --------------
 
 
-if not (len(sys.argv) > 1):
+if not len(sys.argv) > 1:
     OpenLRW.pretty_error("Wrong usage", ["This script requires 1 or 2 arguments (timestamps: FROM - TO)"])
-elif (len(sys.argv) == 2):
-    if (re.match(TIMESTAMP_REGEX, sys.argv[1])):
+elif len(sys.argv) == 2:
+    if re.match(TIMESTAMP_REGEX, sys.argv[1]):
         sql_where = "WHERE timecreated >= " + sys.argv[1]
     else:
         OpenLRW.pretty_error("Wrong usage", ["Argument must be a timestamp (FROM)"])
 else:
-    if (re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2])):
+    if re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2]):
         sql_where = "WHERE timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
@@ -168,7 +168,7 @@ moodle_courses = {}
 for course in courses:
     moodle_courses[course[0]] = course[1]
 
-# Query for a day | Requête pour une journée
+# Requête pour une journée
 query_log.execute(
     "SELECT userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
     "FROM " + DB_LOG_TABLE + " " + sql_where)
@@ -178,17 +178,10 @@ rows_log = query_log.fetchall()
 TOTAL_EVENT = len(rows_log)
 
 for row_log in rows_log:
-    row = {}  # Clears previous buffer
-    row["userId"] = row_log[0]
-    row["courseId"] = row_log[1]
-    row["eventName"] = row_log[2]
-    row["component"] = row_log[3]
-    row["action"] = row_log[4]
-    row["target"] = row_log[5]
-    row["objecttable"] = row_log[6]
-    row["objectId"] = row_log[7]
-    row["timeCreated"] = row_log[8]
-    row["id"] = row_log[9]
+    row = None  # Clears previous buffer
+    row = {"userId": row_log[0], "courseId": row_log[1], "eventName": row_log[2], "component": row_log[3],
+           "action": row_log[4], "target": row_log[5], "objecttable": row_log[6], "objectId": row_log[7],
+           "timeCreated": row_log[8], "id": row_log[9]}  # Clears previous buffer
 
     if row["userId"] in moodle_students:  # Checks if users isn't deleted from the db
         if row["courseId"] in moodle_courses:  # Checks if the course given exists in Moodle
@@ -216,10 +209,10 @@ for row_log in rows_log:
                             "@id": row["courseId"],
                             "@type": "CourseSection"
                         },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%dT%H:%M:%S.755Z')
                     }
                 ],
-                "sendTime": datetime.datetime.now().isoformat(),
+                "sendTime": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.755Z'),
                 "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
 
@@ -244,10 +237,10 @@ for row_log in rows_log:
                             "@id": row["courseId"],
                             "@type": "CourseSection"
                         },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%dT%H:%M:%S.755Z')
                     }
                 ],
-                "sendTime": datetime.datetime.now().isoformat(),
+                "sendTime": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.755Z'),
                 "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
 
@@ -271,10 +264,10 @@ for row_log in rows_log:
                             "@id": row["courseId"],
                             "@type": "CourseSection"
                         },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%dT%H:%M:%S.755Z')
                     }
                 ],
-                "sendTime": datetime.datetime.now().isoformat(),
+                "sendTime": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.755Z'),
                 "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
 
@@ -298,10 +291,10 @@ for row_log in rows_log:
                             "@id": row["courseId"],
                             "@type": "CourseSection"
                         },
-                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).isoformat()
+                        "eventTime": datetime.datetime.fromtimestamp(row["timeCreated"]).strftime('%Y-%m-%dT%H:%M:%S.755Z')
                     }
                 ],
-                "sendTime": datetime.datetime.now().isoformat(),
+                "sendTime": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.755Z'),
                 "sensor": "http://atom.dc.univ-lorraine.fr/scripts/collections/Events/Moodle"
             }
         else:
