@@ -29,6 +29,7 @@ def populate(check, jwt):
     """
     OpenLRW.pretty_message('Initializing', 'Will soon populate the mongoUser collection')
     controls = create_ldap_controls(SETTINGS['ldap']['page_size'])
+    COUNTER = 0
     while 1 < 2:  # hi deadmau5
         try:
             # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
@@ -56,11 +57,11 @@ def populate(check, jwt):
 
             try:
                 OpenLrw.post_user(json, jwt, check)
-                COUNTER = COUNTER + 1
             except ExpiredTokenException:
                 jwt = OpenLrw.generate_jwt()
                 OpenLrw.post_user(json, jwt, check)
 
+            COUNTER = COUNTER + 1
         # Get cookie for next request
         pctrls = get_ldap_controls(server_ctrls)
         if not pctrls:
