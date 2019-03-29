@@ -46,10 +46,11 @@ OpenLRW.pretty_message("CSV File used for the import", GRADES_FILE)
 JWT = OpenLrw.generate_jwt()
 
 
-results = OpenLrw.oneroster_get('/api/classes/unknown_apogee/results', JWT)
+lineitems = OpenLrw.oneroster_get('/api/classes/unknown_apogee/lineitems', JWT)
 classes = OpenLrw.oneroster_get('/api/classes', JWT)
 
-results = json.loads(results)
+lineitems_to_fix = json.loads(lineitems)
+
 classes = json.loads(classes)
 
 classes_with_classcode = []
@@ -60,42 +61,33 @@ for klass in classes:
     except TypeError:
         pass  # classCode is not defined, let skip
 
-lineitems_to_fix = []
-for result in results:
-    lineItem = {'sourcedId': result['lineitem']['sourcedId']}
-    if lineItem not in lineitems_to_fix:
-        lineitems_to_fix.append(lineItem)
-
 LINEITEM_TOTAL = len(lineitems_to_fix)
 # Parse the file to get the "ELP" element in the first by matching the LineItem sourcedId
 
-for lineItem in lineitems_to_fix:
-        for klass in classes_with_classcode:
-            classcode = klass["klass"]["metadata"]["classCode"]
-            if classcode == lineItem['sourcedId']:
-                response = OpenLrw.get_lineitem(lineItem['sourcedId'], JWT)
-                item = json.loads(response)
-                lineItem['title'] = item['lineItem']['title']
-                data = {
-                    "sourcedId": lineItem["sourcedId"],
-                    "class": {
-                        "sourcedId": klass["classSourcedId"],
-                        "title": lineItem["title"]
-                    }
-                }
 
-                COUNTER = COUNTER + 1
-                try:
-                    OpenLrw.post_lineitem(data, JWT, True)
-                except ExpiredTokenException:
-                    JWT = OpenLrw.generate_jwt()
-                    OpenLrw.post_lineitem(data, JWT, True)
-                except InternalServerErrorException as e:
-                    exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e.message.content)
-                except requests.exceptions.ConnectionError as e:
-                    exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e)
-                break
-        lineitems_to_fix.remove(lineItem)
+
+for lineItem in lineitems_to_fix:
+    for klass in classes_with_classcode:
+        classcode = klass["klass"]["metadata"]["classCode"]
+        if classcode == lineItem['sourcedId']:
+            data = {
+                "sourcedId": lineItem["sourcedId"],
+                "class": {
+                    "sourcedId": klass["classSourcedId"],
+                    "title": lineItem["title"]
+                }
+            }
+            COUNTER = COUNTER + 1
+            try:
+                OpenLrw.post_lineitem(data, JWT, True)
+            except ExpiredTokenException:
+                JWT = OpenLrw.generate_jwt()
+                OpenLrw.post_lineitem(data, JWT, True)
+            except InternalServerErrorException as e:
+                exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e.message.content)
+            except requests.exceptions.ConnectionError as e:
+                exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e)
+
 
 
 OpenLrw.pretty_message("Script finished", "Total number of line items edited : " + str(COUNTER))
