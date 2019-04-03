@@ -8,6 +8,7 @@ OpenLRW-scripts is a repository where you can find scripts to populate the Apero
  - [OpenLRW](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW)
  - [Logstash](https://www.elastic.co/fr/downloads/logstash) (≥ 2.4)
  - [Python](https://www.python.org/downloads/)
+    - [openlrw-python-api-client](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW-python-api-client)
     - [python-ldap](#2-python-ldap)
     - [PyYAML](#3-pyyaml)
     - [MySQLdb](#4-MySQLdb)
