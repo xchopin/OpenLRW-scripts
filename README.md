@@ -1,4 +1,6 @@
 # OpenLRW scripts
+> /!\ This README FILE IS NOT UPDATED, it will be later (when I will have time)
+
 
 OpenLRW-scripts is a repository where you can find scripts to populate the Apero OpenLRW API by using different sources. These scripts are used at the [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) and are open-source.
 
