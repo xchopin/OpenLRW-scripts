@@ -23,7 +23,7 @@ OpenLRW-scripts is a repository where you can find scripts to populate the Apero
 
 ## III. Get started
 ### A. Clone the repository
-`$ git clone https://github.com/xchopin/OpenLRW-scripts.git`
+`$ git clone https://gitlab.univ-lorraine.fr/dn-infra-mauve/la-scripts`
 
 ### B. Create and edit the settings file
 ```bash 
@@ -87,6 +87,16 @@ $ sh authentications.sh
  > Import events from a timestamp to another timestamp
  
   `$ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP` 
+  
+ > Import the 24h last events from the temporary table (if you have one)
+ 
+  `$ python collection/Events/Moodle/import_last_events.py TIMESTAMP TIMESTAMP` 
+  
+### C. LineItems (LineItems collection)
+
+#### 1. Add Moodle lineitems
+
+` $ python collection/LineItems/Moodle/import_lineitems.py `
 
 ## V. License
 OpenLRW-scripts is made available under the terms of the [Educational Community License, Version 2.0 (ECL-2.0)](https://opensource.org/licenses/ECL-2.0).
