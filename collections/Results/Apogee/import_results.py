@@ -2,9 +2,9 @@
 # coding: utf-8
 
 __author__ = "Xavier Chopin"
-__copyright__ = "Copyright 2018, University of Lorraine"
+__copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -27,7 +27,7 @@ URI = SETTINGS['api']['uri'] + '/api'
 RESULT_COUNTER = 0
 LINEITEM_COUNTER = 0
 MAIL = None
-FILE_NAME = 'data/Results/Notes_IC0_2018.csv'
+FILE_NAME = 'data/Results/apogee_results.csv'
 RESULT_NAMES = 'data/Results/name.csv'
 
 
@@ -141,12 +141,12 @@ with f1:
                     line_items.append(item)
                     LINEITEM_COUNTER = LINEITEM_COUNTER + 1
                     try:
-                        OpenLrw.post_lineitem(item, JWT, False)
+                        OpenLrw.post_lineitem(item, JWT, True)  # We check since the line item can exist
                     except ExpiredTokenException:
                         JWT = OpenLrw.generate_jwt()
-                        OpenLrw.post_lineitem(item, JWT, False)
-                    except InternalServerErrorException:
-                        exit_log(grade['exam_id'], response)
+                        OpenLrw.post_lineitem(item, JWT, True)
+                    except InternalServerErrorException as e:
+                        exit_log(grade['exam_id'], e.message.content)
                     except requests.exceptions.ConnectionError as e:
                         exit_log('Unable to create the LineItem ' + grade['exam_id'], e)
 
