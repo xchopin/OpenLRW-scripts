@@ -73,7 +73,7 @@ with f1:
                 if len(data) > 3:
                     grade['status'] = data[3]
 
-                string = str(username) + str(grade['exam_id']) + str(grade['score'])
+                string = str(username) + str(grade['exam_id']) + str(grade['score'] + str(year))
                 sourcedId = hashlib.sha1(string)
                 json = {
                     'sourcedId': str(sourcedId.hexdigest()),
