@@ -76,7 +76,7 @@ with f1:
                 string = str(username) + str(grade['exam_id']) + str(grade['score'])
                 sourcedId = hashlib.sha1(string)
                 json = {
-                    'sourcedId': str(sourcedId),
+                    'sourcedId': str(sourcedId.hexdigest()),
                     'score': str(grade['score']),
                     'resultStatus': grade['status'],
                     'student': {
