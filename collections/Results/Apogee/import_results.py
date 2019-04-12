@@ -8,11 +8,10 @@ __version__ = "1.1.0"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
-import datetime
+import hashlib
 import sys
 import os
 import requests
-import datetime
 import csv
 import uuid
 import json
@@ -74,8 +73,10 @@ with f1:
                 if len(data) > 3:
                     grade['status'] = data[3]
 
+                string = str(username) + str(grade['exam_id']) + str(grade['score'])
+                sourcedId = hashlib.sha1(string)
                 json = {
-                    'sourcedId': str(uuid.uuid4()),
+                    'sourcedId': str(sourcedId),
                     'score': str(grade['score']),
                     'resultStatus': grade['status'],
                     'student': {
@@ -95,10 +96,10 @@ with f1:
                 RESULT_COUNTER = RESULT_COUNTER + 1
 
                 try:
-                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, False)  # It makes no sense to check since it's a random sourcedId
+                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, True)
                 except ExpiredTokenException:
                     JWT = OpenLrw.generate_jwt()
-                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, False)
+                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, True)
                 except BadRequestException as e:
                     exit_log(grade['exam_id'], e.message.content)
                 except InternalServerErrorException as e:
