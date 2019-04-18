@@ -11,7 +11,6 @@ All these scripts are open-source so feel free to use them!
 
 
 ## I. Requirements
-
  - #### Python Scripts
     - [Python ≥ 2.7](https://www.python.org/downloads/)
     - [openlrw-python-api-client](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW-python-api-client)
@@ -26,56 +25,66 @@ All these scripts are open-source so feel free to use them!
   - #### Bash Scripts
     - An UNIX Operating System 
 
-
 ## II. Get started
-### A. Clone the repository
+### 1. Clone the repository
 `$ git clone https://github.com/xchopin/openlrw-scripts`
 
-### B. Create and edit the settings file
+### 2. Create and edit the settings file
 ```bash 
 $ cd OpenLRW-scripts/bootstrap
 $ cp settings.yml.dist settings.yml ; vi settings.yml
 ```
 
-### C. Install the Python libraries
+### 3. Install the Python libraries
 > To get the libraries you will need to have [PIP package manager](https://pypi.python.org/pypi/pip)
 
-- #### 1. Download and install PIP
+- #### A. Download and install PIP
    `$ wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py ; python /tmp/get-pip.py`
 
-- #### 2. python-ldap
+- #### B. python-ldap
    `$ pip install python-ldap` 
    
-- #### 3. PyYAML
+- #### C. PyYAML
    `$ pip install pyyaml` 
    
-- #### 4. MySQLdb   
+- #### D. MySQLdb   
    `$ pip install mysqlclient`
  
 
+## III. Usage
+### 1. Users
+#### - Import users
+> Language: Python - Sources used: LDAP
 
+- ##### Import all the users (populate)
+This script will import the users by using the LDAP database.
 
-## II. Sources used to import data
-- LDAP
-- Log files from [CAS applications](https://en.wikipedia.org/wiki/Central_Authentication_Service)
-- [Moodle LMS](https://moodle.com/)
-- CSV from Apogée [(a software for the French universities)](https://fr.wikipedia.org/wiki/Apog%C3%A9e_(logiciel))
+> Clear then populate the collection (recommended for a new OpenLRW instance)
 
+```$ python collection/Users/LDAP/import_users.py reset```
+
+- ##### Update the collection
+> Add the new users to the collection (slower: checks duplicates)
+
+```$ python collection/Users/LDAP/import_users.py update```
+
+#### - Add High school diploma (Baccalaureat) to students
+> Language: Python - Sources used: .csv file (users data from Apogée)
+
+⚠ **Your source file has to be located at this place `data/Users/baccalaureat_student.csv`.**
+
+> The new informations will be added into the metadata attribute.
+
+```$ python collection/Users/Apogee/update_baccalaureat.py```
+
+<hr>
+
+### 2. Events
+#### - CAS Authentications
+ > Languages: Bash, Logstash - Sources used: log files (CAS)
  
-## III. API
-### A. Users (mongoUser collection)
- > This script will import the users by using the LDAP database and the CSV files; there are 2 arguments possible
-
-|        Action        |                        Usage                       |    Sources Used    |                           Description                           |
-|:--------------------:|:--------------------------------------------------:|:------------------:|:---------------------------------------------------------------:|
-| Import all the users | `$ python collection/Users/import_users.py reset`  | LDAP, Apogée (CSV) |                Clear then populate the collection               |
-|        Update        | `$ python collection/Users/import_users.py update` | LDAP, Apogée (CSV) | Add the new users to the collection (slower: checks duplicates) |
-|                      |                                                    |                    |                                                                 |
-
-### B. Caliper Events (mongoEvent collection)
-#### 1. Add CAS authentications to the collection
- > This script will import the "logged-in" events (students only)  by using log files
- 
+ This script will import the "logged-in" events (students only)  by using log files
+    
 - ##### For one log file
 ```bash
 $ cd collections/Events/CAS/
@@ -88,19 +97,29 @@ $ cd collections/Events/CAS/
 $ sh authentications.sh
 ```  
 
-#### 2. Add Moodle events to the collection
+<hr>
 
- > Import events from a timestamp
+#### - Moodle LMS
+> Language: Python - Sources used: MySQL (events from Moodle)
 
- `$ python collection/Events/Moodle/import_events.py TIMESTAMP` 
+- ##### Import all the events
+
+ > From a timestamp
  
- > Import events from a timestamp to another timestamp
+ ```$ python collection/Events/Moodle/import_events.py TIMESTAMP```  
  
-  `$ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP` 
+ > From a timestamp to another one
+ 
+ ```$ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP``` 
   
- > Import the 24h last events from the temporary table (if you have one)
- 
-  `$ python collection/Events/Moodle/import_last_events.py TIMESTAMP TIMESTAMP` 
+- ##### Import the events from the 24 last hours
+  > It queries a temporary table that contains the events on the 24 last hours.
+
+```$ python collection/Events/Moodle/import_last_events.py```
+  
+  
+  
+  
   
 ### C. LineItems (LineItems collection)
 
