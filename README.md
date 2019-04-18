@@ -6,8 +6,9 @@
    <img src="https://scrutinizer-ci.com/g/xchopin/OpenLRW-scripts/badges/quality-score.png?b=master" alt="code quality score">
 </p>
 
-> OpenLRW scripts is a repository of different scripts used at [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) to populate the collections of the Apereo OpenLRW API. <br>
-All these scripts are open-source so feel free to use them!
+**This is a repository of different scripts used at [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) to populate the collections of the OpenLRW API. 
+<br> <br>
+All these scripts are open-source, so feel free to edit/use them!**
 
 
 ## I. Requirements
@@ -22,12 +23,11 @@ All these scripts are open-source so feel free to use them!
  - #### Logstash Scripts
     - [Logstash ≥ 2.4](https://www.elastic.co/fr/downloads/logstash) 
 
-  - #### Bash Scripts
-    - An UNIX Operating System 
-
 ## II. Get started
 ### 1. Clone the repository
-`$ git clone https://github.com/xchopin/openlrw-scripts`
+```
+$ git clone https://github.com/xchopin/openlrw-scripts
+```
 
 ### 2. Create and edit the settings file
 ```bash 
@@ -39,34 +39,45 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
 > To get the libraries you will need to have [PIP package manager](https://pypi.python.org/pypi/pip)
 
 - #### A. Download and install PIP
-   `$ wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py ; python /tmp/get-pip.py`
+   ```
+   $ wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py ; python /tmp/get-pip.py
+   ```
 
 - #### B. python-ldap
-   `$ pip install python-ldap` 
+   ```
+   $ pip install python-ldap
+   ``` 
    
 - #### C. PyYAML
-   `$ pip install pyyaml` 
+   ```
+   $ pip install pyyaml
+   ```
    
 - #### D. MySQLdb   
-   `$ pip install mysqlclient`
+   ```
+   $ pip install mysqlclient
+   ```
  
-
+ 
 ## III. Usage
 ### 1. Users
 #### - Import users
-> Language: Python - Sources used: LDAP
-
+<img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-LDAP-blue.svg?style=flat-square" alt="sources used">
 - ##### Import all the users (populate)
 This script will import the users by using the LDAP database.
 
 > Clear then populate the collection (recommended for a new OpenLRW instance)
 
-```$ python collection/Users/LDAP/import_users.py reset```
+```
+$ python collection/Users/LDAP/import_users.py reset
+```
 
 - ##### Update the collection
 > Add the new users to the collection (slower: checks duplicates)
 
-```$ python collection/Users/LDAP/import_users.py update```
+```
+$ python collection/Users/LDAP/import_users.py update
+```
 
 #### - Add High school diploma (Baccalaureat) to students
 > Language: Python - Sources used: .csv file (users data from Apogée)
@@ -75,13 +86,15 @@ This script will import the users by using the LDAP database.
 
 > The new informations will be added into the metadata attribute.
 
-```$ python collection/Users/Apogee/update_baccalaureat.py```
+```
+$ python collection/Users/Apogee/update_baccalaureat.py
+```
 
 <hr>
 
 ### 2. Events
 #### - CAS Authentications
- > Languages: Bash, Logstash - Sources used: log files (CAS)
+ <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-Log files (CAS)-blue.svg?style=flat-square" alt="sources used">
  
  This script will import the "logged-in" events (students only)  by using log files
     
@@ -100,17 +113,21 @@ $ sh authentications.sh
 <hr>
 
 #### - Moodle LMS
-> Language: Python - Sources used: MySQL (events from Moodle)
+<img src="https://img.shields.io/badge/language-python-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 
 - ##### Import all the events
 
  > From a timestamp
  
- ```$ python collection/Events/Moodle/import_events.py TIMESTAMP```  
+ ```
+ $ python collection/Events/Moodle/import_events.py TIMESTAMP
+ ```  
  
  > From a timestamp to another one
  
- ```$ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP``` 
+ ```
+ $ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP
+ ``` 
   
 - ##### Import the events from the 24 last hours
   > It queries a temporary table that contains the events on the 24 last hours.
