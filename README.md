@@ -1,29 +1,35 @@
 # OpenLRW scripts
-> /!\ This README FILE IS NOT UPDATED, it will be later (when I will have time)
 
+<p align="center">
+   <a href='https://www.python.org/dev/peps/pep-0008/'><img src="https://img.shields.io/badge/code%20style-pep8-brightgreen.svg?style=flat-square" alt="code style pep 8"></a>
+   <img src="https://img.shields.io/github/license/xchopin/openlrw-scripts.svg?style=flat-square"> 
+   <img src="https://scrutinizer-ci.com/g/xchopin/OpenLRW-scripts/badges/quality-score.png?b=master" alt="code quality score">
+</p>
 
-OpenLRW-scripts is a repository where you can find scripts to populate the Apero OpenLRW API by using different sources. These scripts are used at [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) and are open-source.
+> OpenLRW scripts is a repository of different scripts used at [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) to populate the collections of the Apereo OpenLRW API. <br>
+All these scripts are open-source so feel free to use them!
+
 
 ## I. Requirements
- - [OpenLRW](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW)
- - [Logstash](https://www.elastic.co/fr/downloads/logstash) (≥ 2.4)
- - [Python](https://www.python.org/downloads/)
+
+ - #### Python Scripts
+    - [Python ≥ 2.7](https://www.python.org/downloads/)
     - [openlrw-python-api-client](https://github.com/Apereo-Learning-Analytics-Initiative/OpenLRW-python-api-client)
     - [python-ldap](#2-python-ldap)
     - [PyYAML](#3-pyyaml)
     - [MySQLdb](#4-MySQLdb)
     - [OpenLDAP](https://stackoverflow.com/a/4768467/7644126)
+   
+ - #### Logstash Scripts
+    - [Logstash ≥ 2.4](https://www.elastic.co/fr/downloads/logstash) 
 
-## II. Sources used to import data
-- LDAP
-- Log files from [CAS applications](https://en.wikipedia.org/wiki/Central_Authentication_Service)
-- [Moodle LMS](https://moodle.com/)
-- CSV from Apogée [(a software for the French universities)](https://fr.wikipedia.org/wiki/Apog%C3%A9e_(logiciel))
+  - #### Bash Scripts
+    - An UNIX Operating System 
 
 
-## III. Get started
+## II. Get started
 ### A. Clone the repository
-`$ git clone https://gitlab.univ-lorraine.fr/dn-infra-mauve/la-scripts`
+`$ git clone https://github.com/xchopin/openlrw-scripts`
 
 ### B. Create and edit the settings file
 ```bash 
@@ -47,20 +53,24 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    `$ pip install mysqlclient`
  
 
-## IV. Usage
+
+
+## II. Sources used to import data
+- LDAP
+- Log files from [CAS applications](https://en.wikipedia.org/wiki/Central_Authentication_Service)
+- [Moodle LMS](https://moodle.com/)
+- CSV from Apogée [(a software for the French universities)](https://fr.wikipedia.org/wiki/Apog%C3%A9e_(logiciel))
+
+ 
+## III. API
 ### A. Users (mongoUser collection)
  > This script will import the users by using the LDAP database and the CSV files; there are 2 arguments possible
 
-- #### 1. Populate the collection
-    > Clears then populates the collection (faster)
-
-    `$ python collection/Users/import_users.py reset`    
-
-
-- #### 2. Update the collection
-    > Adds the new users to the collection (slower: checks duplicates)
-
-    `$ python collection/Users/import_users.py update`  
+|        Action        |                        Usage                       |    Sources Used    |                           Description                           |
+|:--------------------:|:--------------------------------------------------:|:------------------:|:---------------------------------------------------------------:|
+| Import all the users | `$ python collection/Users/import_users.py reset`  | LDAP, Apogée (CSV) |                Clear then populate the collection               |
+|        Update        | `$ python collection/Users/import_users.py update` | LDAP, Apogée (CSV) | Add the new users to the collection (slower: checks duplicates) |
+|                      |                                                    |                    |                                                                 |
 
 ### B. Caliper Events (mongoEvent collection)
 #### 1. Add CAS authentications to the collection
