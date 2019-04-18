@@ -16,7 +16,7 @@ from bootstrap.helpers import *
 
 jwt = OpenLrw.generate_jwt()  # Generate a JSON Web Token for using OneRoster routes
 
-csv_file = open('data/BAC_IC0_2018.csv', 'r')
+csv_file = open('data/Users/baccalaureat_student.csv', 'r')
 counter = 0
 with csv_file:
     has_header = csv.Sniffer().has_header(csv_file.read(1024))
