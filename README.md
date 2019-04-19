@@ -62,7 +62,11 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
 ## III. Usage
 ### 1. Users
 #### - Import users
-<img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-LDAP-blue.svg?style=flat-square" alt="sources used">
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-LDAP-blue.svg?style=flat-square" alt="sources used">
+</p>
+
 - ##### Import all the users (populate)
 This script will import the users by using the LDAP database.
 
@@ -79,10 +83,25 @@ $ python collection/Users/LDAP/import_users.py reset
 $ python collection/Users/LDAP/import_users.py update
 ```
 
+<br>
+
 #### - Add High school diploma (Baccalaureat) to students
-> Language: Python - Sources used: .csv file (users data from Apogée)
+<p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-.csv file (Apogée)-blue.svg?style=flat-square" alt="sources used">
+</p>
 
 ⚠ **Your source file has to be located at this place `data/Users/baccalaureat_student.csv`.**
+
+
+##### Sample of baccalaureat_student.csv
+
+```csv
+COD_ETU;COD_BAC;ANNEE_BAC;MNB_BAC
+foobar1;S;2013;AB
+foobar2;ES;2018;AB
+foobar3;S;2012;
+```
 
 > The new informations will be added into the metadata attribute.
 
@@ -115,7 +134,10 @@ $ sh authentications.sh
 
 
 #### - Moodle LMS
-<img src="https://img.shields.io/badge/language-python-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
+<p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
+</p>
 
 - ##### Import all the events
 
@@ -130,11 +152,14 @@ $ sh authentications.sh
  ```
  $ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP
  ``` 
-  
+ 
 - ##### Import the events from the 24 last hours
-  > It queries a temporary table that contains the events on the 24 last hours.
 
-```$ python collection/Events/Moodle/import_last_events.py```
+> It queries a temporary table that contains the events on the 24 last hours.
+
+```
+$ python collection/Events/Moodle/import_last_events.py
+```
   
   
  <hr>
@@ -143,7 +168,7 @@ $ sh authentications.sh
 ### 3. Class
 #### - Moodle LMS
  <p align="center">
-   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/language-Python.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
@@ -164,12 +189,12 @@ In order to set all your classes as active just let the file empty.
 $ python collection/Classes/Moodle/import_classes.py
 ```  
 
+  <hr>
  
- 
- ### 4. Result
+### 4. Result
 #### - Moodle LMS
  <p align="center">
-   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
@@ -182,7 +207,7 @@ $ python collection/Results/Moodle/import_results.py
 
 #### - Apogée
  <p align="center">
-   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-.csv files (Apogée)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
@@ -211,23 +236,43 @@ AAAAA3;Management
 AAAAA4;Internship
 ```  
    
-
 > Add the results by checking duplicates. It will add LineItem objects if they don't exist. In order to link these new LineItems to a Moodle class you will have a to use a script (more details in LineItems section)
+
 ```bash
 $ python collection/Results/Apogee/import_results.py
 ```   
  
- 
- 
- 
- 
+<hr>
 
-  
-### C. LineItems (LineItems collection)
 
-#### 1. Add Moodle lineitems
+### 5. LineItem
+#### - Moodle LMS
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
+</p>
+ 
+This script imports the lineItems from Moodle and also checks duplicates, it means you can use it several times for updates. 
 
-` $ python collection/LineItems/Moodle/import_lineitems.py `
+> Import the LineItems
+```bash
+$ python collection/LineItems/Moodle/import_lineitems.py
+```  
+
+#### - Apogée
+<p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-.csv files (Apogée)-blue.svg?style=flat-square" alt="sources used">
+</p>
+ 
+This script maps the LineItem objects created by the `import_results.py` script. It checks for each Moodle class that contains the `classCode` attribute in metadata if it equals their sourcedId.
+
+> Map the Apogée LineItems to Moodle classes
+```bash
+$ python collection/LineItems/Apogee/
+```  
+
+ <hr>
 
 ## V. License
 OpenLRW-scripts is made available under the terms of the [Educational Community License, Version 2.0 (ECL-2.0)](https://opensource.org/licenses/ECL-2.0).
