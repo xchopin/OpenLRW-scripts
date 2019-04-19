@@ -94,7 +94,10 @@ $ python collection/Users/Apogee/update_baccalaureat.py
 
 ### 2. Events
 #### - CAS Authentications
- <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-Log files (CAS)-blue.svg?style=flat-square" alt="sources used">
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-Log files (CAS)-blue.svg?style=flat-square" alt="sources used">
+</p>
  
  This script will import the "logged-in" events (students only)  by using log files
     
@@ -110,7 +113,6 @@ $ cd collections/Events/CAS/
 $ sh authentications.sh
 ```  
 
-<hr>
 
 #### - Moodle LMS
 <img src="https://img.shields.io/badge/language-python-brightgreen.svg?style=flat-square" alt="language used"> <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
@@ -135,8 +137,91 @@ $ sh authentications.sh
 ```$ python collection/Events/Moodle/import_last_events.py```
   
   
-  
-  
+ <hr>
+ 
+ 
+### 3. Class
+#### - Moodle LMS
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
+</p>
+ 
+ This script imports the Moodle classes, it also checks duplicates so you can run it several times for updates. <br>
+ It also uses a .txt file to allow you to active the class you want (other will be inactive).
+ 
+ ⚠ **The template file is located at `data/Classes/active_classes.txt.dist`.**
+ 
+##### Copy the template file
+```bash
+$ cp data/Classes/active_classes.txt.dist data/Classes/active_classes.txt
+```   
+Then add the class id (one per line), you can add comments with the # character. <br>
+In order to set all your classes as active just let the file empty.
+   
+##### Import classes from Moodle
+```bash
+$ python collection/Classes/Moodle/import_classes.py
+```  
+
+ 
+ 
+ ### 4. Result
+#### - Moodle LMS
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
+</p>
+ 
+ This script imports the Moodle quizzes/active quizzes and link them to a Moodle class.
+ 
+##### Import results from Moodle
+```bash
+$ python collection/Results/Moodle/import_results.py
+```  
+
+#### - Apogée
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-.csv files (Apogée)-blue.svg?style=flat-square" alt="sources used">
+</p>
+ 
+ 
+##### Import results from Apogée
+
+⚠ **Two files are required**
+   - **the first one has to be located at `data/Results/apogee_results.csv` (it contains all the results)**
+   - **the second has to be located at `data/Results/name.csv` (it contains the LineItem id and then the name of this LineItem** 
+   
+ ##### Sample of apogee_results.csv
+ 
+ ```csv
+foobar1;2019;3WLAEIMIA;200;initiale;1WIN12;800;UE1-AAAAA1-17.0-ADM
+foobar2;2019;3WLAEIMIA;200;initiale;1WIN12;800;UE1-AAAAA1-12.0-ADM
+foobar2;2019;3WLOEIMIA;200;initiale;1WIN12;800;UE1-AAAAA3-12.0-null
+```   
+
+ ##### Sample of name.csv
+ 
+ ```csv
+COD_ELP;LIB_ELP
+AAAAA1;Discret Math
+AAAAA2;Web applications with JavaEE
+AAAAA3;Management
+AAAAA4;Internship
+```  
+   
+
+> Add the results by checking duplicates. It will add LineItem objects if they don't exist. In order to link these new LineItems to a Moodle class you will have a to use a script (more details in LineItems section)
+```bash
+$ python collection/Results/Apogee/import_results.py
+```   
+ 
+ 
+ 
+ 
+ 
+
   
 ### C. LineItems (LineItems collection)
 
