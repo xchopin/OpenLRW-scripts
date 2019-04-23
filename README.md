@@ -274,5 +274,21 @@ $ python collection/LineItems/Apogee/
 
  <hr>
 
+
+### 6. Enrollments
+#### - Moodle LMS
+ <p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
+</p>
+ 
+This script imports the enrollments from Moodle and also checks duplicates, it means you can use it several times for updates. 
+
+> Import the Enrollments
+```bash
+$ python collection/Enrollments/Moodle/import_enrollments.py
+```  
+
+
 ## V. License
 OpenLRW-scripts is made available under the terms of the [Educational Community License, Version 2.0 (ECL-2.0)](https://opensource.org/licenses/ECL-2.0).
