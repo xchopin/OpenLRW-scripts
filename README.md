@@ -282,11 +282,11 @@ $ python collection/LineItems/Apogee/
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
-This script imports the enrollments from Moodle and also checks duplicates, it means you can use it several times for updates. 
+This script imports the enrollments from Moodle with a timestamp argument (from)
 
 > Import the Enrollments
 ```bash
-$ python collection/Enrollments/Moodle/import_enrollments.py
+$ python collection/Enrollments/Moodle/import_enrollments.py TIMESTAMP
 ```  
 
 
