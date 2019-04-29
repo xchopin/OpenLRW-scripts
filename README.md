@@ -91,7 +91,7 @@ $ python collection/Users/LDAP/import_users.py update
    <img src="https://img.shields.io/badge/sources used-.csv file (Apogée)-blue.svg?style=flat-square" alt="sources used">
 </p>
 
-⚠ **Your source file has to be located at this place `data/Users/baccalaureat_student.csv`.**
+⚠ **Your source file has to be located at `data/Users/baccalaureat_student.csv`.**
 
 
 ##### Sample of baccalaureat_student.csv
@@ -103,7 +103,7 @@ foobar2;ES;2018;AB
 foobar3;S;2012;
 ```
 
-> The new informations will be added into the metadata attribute.
+> The new informations will be added into the `metadata` attribute.
 
 ```
 $ python collection/Users/Apogee/update_baccalaureat.py
@@ -155,7 +155,7 @@ $ sh authentications.sh
  
 - ##### Import the events from the 24 last hours
 
-> It queries a temporary table that contains the events on the 24 last hours.
+> It queries a temporary table that contains the events oF the 24 last hours.
 
 ```
 $ python collection/Events/Moodle/import_last_events.py
