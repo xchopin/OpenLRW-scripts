@@ -265,7 +265,7 @@ $ python collection/LineItems/Moodle/import_lineitems.py
    <img src="https://img.shields.io/badge/sources used-.csv files (Apogée)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
-This script maps the LineItem objects created by the `import_results.py` script. It checks for each Moodle class that contains the `classCode` attribute in metadata if it equals their sourcedId.
+This script maps the LineItem objects created by the `import_results.py` script. For each Moodle class that contains the `classCode` key in `metadata` it checks if it equals their sourcedId.
 
 > Map the Apogée LineItems to Moodle classes
 ```bash
