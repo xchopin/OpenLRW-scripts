@@ -198,7 +198,7 @@ $ python collection/Classes/Moodle/import_classes.py
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
- This script imports the Moodle quizzes/active quizzes and link them to a Moodle class.
+This script imports the `Quizzes`, `Active quizzes` and the `Grades` from the Moodle database. Checking method is used for HTTP Post so you can use the script for populating and updating your collection.
  
 ##### Import results from Moodle
 ```bash
