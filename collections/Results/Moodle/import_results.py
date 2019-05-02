@@ -13,6 +13,7 @@ import sys
 import os
 import requests
 import datetime
+import json
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -30,6 +31,7 @@ URI = SETTINGS['api']['uri'] + '/api/classes/'
 MAIL = None
 
 COUNTER = 0
+
 
 def exit_log(result_id, reason):
     """
@@ -63,7 +65,7 @@ def insert_quizzes(query):
         else:
             date = ""
 
-        json = {
+        result = {
             'sourcedId': result_id,
             'score': str(score),
             'date': date,
@@ -80,10 +82,10 @@ def insert_quizzes(query):
         }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -116,7 +118,7 @@ def insert_active_quizzes(query):
             date = ""
 
         if feedback is None:
-            json = {
+            result = {
                 'sourcedId': result_id,
                 'score': str(score),
                 'date': date,
@@ -132,7 +134,7 @@ def insert_active_quizzes(query):
                 }
             }
         else:
-            json = {
+            result = {
                 'sourcedId': result_id,
                 'score': str(score),
                 'date': date,
@@ -150,10 +152,10 @@ def insert_active_quizzes(query):
             }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -175,8 +177,8 @@ def insert_grades(query):
         " AND itemname IS NOT NULL;")
 
     results = query.fetchall()
-
     JWT = OpenLrw.generate_jwt()
+    line_items = json.loads(OpenLrw.get_lineitems(JWT))
 
     for result in results:
         student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id = result
@@ -187,7 +189,7 @@ def insert_grades(query):
             date = ""
 
         # Creation of the Result object
-        json = {
+        res_object = {
             'sourcedId': result_id,
             'score': str(score),
             'date': date,
@@ -205,12 +207,11 @@ def insert_grades(query):
             }
         }
 
-
         try:
-            OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, False)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, json, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, False)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -220,29 +221,43 @@ def insert_grades(query):
             exit_log(result_id, e)
 
         # Creation of Line Items
+
+        res = False  # First we check if the lineItem already exists in the database
         item_id = 'grade_item_' + str(lineitem_id)
+        for i in range(0, len(line_items)):
+            if line_items[i]['lineItem']['sourcedId'] == item_id:
+                res = True
+                break
 
-        item = {
-            "sourcedId": item_id,
-            "title": item_name,
-            "assignDate": "",
-            "dueDate": "",
-            "class": {
-                "sourcedId": class_id
+        if not res:
+            item = {
+                "sourcedId": item_id,
+                "title": item_name,
+                "assignDate": "",
+                "dueDate": "",
+                "class": {
+                    "sourcedId": class_id
+                },
+                "lineItem": {
+                    "sourcedId": item_id
+                }
             }
-        }
 
-        try:
-            OpenLrw.post_lineitem(item, JWT, True)
-        except ExpiredTokenException:
-            JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_lineitem(item, JWT, True)
-        except InternalServerErrorException as e:
-            exit_log('Unable to create the LineItem ' + item_id, e.message.content)
-        except requests.exceptions.ConnectionError as e:
-            exit_log('Unable to create the LineItem ' + item_id, e)
+            try:
+                OpenLrw.post_lineitem(item, JWT, False)
+            except ExpiredTokenException:
+                JWT = OpenLrw.generate_jwt()
+                OpenLrw.post_lineitem(item, JWT, False)
+            except InternalServerErrorException as e:
+                exit_log('Unable to create the LineItem ' + item_id, e.message.content)
+            except requests.exceptions.ConnectionError as e:
+                exit_log('Unable to create the LineItem ' + item_id, e)
 
-        return len(results)
+            # Add new line item to the dynamic array
+            line_items.append(item)
+
+    return len(results)
+
 
 # -------------- DATABASES --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
@@ -259,6 +274,7 @@ db.close()
 OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
 
 message = sys.argv[0] + " executed in " + measure_time() + "seconds " \
-           "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
+                                                           "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(
+    COUNTER)
 
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
