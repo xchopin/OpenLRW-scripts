@@ -168,7 +168,7 @@ $ python collections/Events/Moodle/import_last_events.py
 ### 3. Class
 #### - Moodle LMS
  <p align="center">
-   <img src="https://img.shields.io/badge/language-Python.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
