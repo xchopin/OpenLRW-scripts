@@ -60,8 +60,8 @@ def populate(check, jwt):
             except ExpiredTokenException:
                 jwt = OpenLrw.generate_jwt()
                 OpenLrw.post_user(json, jwt, check)
-
             COUNTER = COUNTER + 1
+           
         # Get cookie for next request
         pctrls = get_ldap_controls(server_ctrls)
         if not pctrls:
@@ -114,7 +114,7 @@ elif sys.argv[1] == 'update':
     populate(True, jwt)
 
 
-OpenLRW.pretty_message("Script finished", "Total number of line items sent : " + str(COUNTER))
+OpenLRW.pretty_message("Script finished", "Total number of users imported : " + str(COUNTER))
 
 message = str("LDAP Users imported in " + measure_time() + " seconds")
 
