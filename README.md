@@ -73,14 +73,14 @@ This script will import the users by using the LDAP database.
 > Clear then populate the collection (recommended for a new OpenLRW instance)
 
 ```
-$ python collection/Users/LDAP/import_users.py reset
+$ python collections/Users/LDAP/import_users.py reset
 ```
 
 - ##### Update the collection
 > Add the new users to the collection (slower: checks duplicates)
 
 ```
-$ python collection/Users/LDAP/import_users.py update
+$ python collections/Users/LDAP/import_users.py update
 ```
 
 <br>
