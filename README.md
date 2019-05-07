@@ -106,7 +106,7 @@ foobar3;S;2012;
 > The new informations will be added into the `metadata` attribute.
 
 ```
-$ python collection/Users/Apogee/update_baccalaureat.py
+$ python collections/Users/Apogee/update_baccalaureat.py
 ```
 
 <hr>
@@ -144,13 +144,13 @@ $ sh authentications.sh
  > From a timestamp
  
  ```
- $ python collection/Events/Moodle/import_events.py TIMESTAMP
+ $ python collections/Events/Moodle/import_events.py TIMESTAMP
  ```  
  
  > From a timestamp to another one
  
  ```
- $ python collection/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP
+ $ python collections/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP
  ``` 
  
 - ##### Import the events from the 24 last hours
@@ -158,7 +158,7 @@ $ sh authentications.sh
 > It queries a temporary table that contains the events oF the 24 last hours.
 
 ```
-$ python collection/Events/Moodle/import_last_events.py
+$ python collections/Events/Moodle/import_last_events.py
 ```
   
   
@@ -186,7 +186,7 @@ In order to set all your classes as active just let the file empty.
    
 ##### Import classes from Moodle
 ```bash
-$ python collection/Classes/Moodle/import_classes.py
+$ python collections/Classes/Moodle/import_classes.py
 ```  
 
   <hr>
@@ -202,7 +202,7 @@ This script imports the `Quizzes`, `Active quizzes` and the `Grades` from the Mo
  
 ##### Import results from Moodle
 ```bash
-$ python collection/Results/Moodle/import_results.py
+$ python collections/Results/Moodle/import_results.py
 ```  
 
 #### - Apogée
@@ -239,7 +239,7 @@ AAAAA4;Internship
 > Add the results by checking duplicates. It will add LineItem objects if they don't exist. In order to link these new LineItems to a Moodle class you will have a to use a script (more details in LineItems section)
 
 ```bash
-$ python collection/Results/Apogee/import_results.py
+$ python collections/Results/Apogee/import_results.py
 ```   
  
 <hr>
@@ -256,7 +256,7 @@ This script imports the lineItems from Moodle and also checks duplicates, it mea
 
 > Import the LineItems
 ```bash
-$ python collection/LineItems/Moodle/import_lineitems.py
+$ python collections/LineItems/Moodle/import_lineitems.py
 ```  
 
 #### - Apogée
@@ -269,7 +269,7 @@ This script maps the LineItem objects created by the `import_results.py` script.
 
 > Map the Apogée LineItems to Moodle classes
 ```bash
-$ python collection/LineItems/Apogee/
+$ python collections/LineItems/Apogee/
 ```  
 
  <hr>
@@ -286,7 +286,7 @@ This script imports the enrollments from Moodle with a timestamp argument (from)
 
 > Import the Enrollments
 ```bash
-$ python collection/Enrollments/Moodle/import_enrollments.py TIMESTAMP
+$ python collections/Enrollments/Moodle/import_enrollments.py TIMESTAMP
 ```  
 
 
