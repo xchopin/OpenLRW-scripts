@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # coding: utf-8
-import json
 
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2018, University of Lorraine"
@@ -9,8 +8,10 @@ __version__ = "1.0.0"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
+
+import json
+import sys, os
 import csv
-import sys
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
