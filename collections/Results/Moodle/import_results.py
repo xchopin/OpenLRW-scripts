@@ -97,7 +97,7 @@ def insert_quizzes(query, sql_where):
     return len(results)
 
 
-def insert_active_quizzes(query):
+def insert_active_quizzes(query, sql_where):
     # Query to get active quizzes
     query.execute(
         "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified, activequiz.course"
