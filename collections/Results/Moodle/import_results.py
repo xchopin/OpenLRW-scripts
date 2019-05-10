@@ -15,6 +15,7 @@ import requests
 import datetime
 import json
 import re
+import time
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -48,9 +49,9 @@ def exit_log(result_id, reason):
 
 def insert_quizzes(query, sql_where):
     # Query to get quizzes
-    query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified as timemodified, quiz.course"
+    query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified, quiz.course"
                   " FROM mdl_user as users, mdl_quiz_grades as grades, mdl_quiz as quiz"
-                  " WHERE grades.quiz = quiz.id AND users.id = grades.userid" + sql_where )
+                  " WHERE grades.quiz = quiz.id AND users.id = grades.userid " + sql_where)
 
     results = query.fetchall()
 
@@ -81,10 +82,10 @@ def insert_quizzes(query, sql_where):
         }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -99,7 +100,7 @@ def insert_quizzes(query, sql_where):
 def insert_active_quizzes(query):
     # Query to get active quizzes
     query.execute(
-        "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified as timemodified, activequiz.course"
+        "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified, activequiz.course"
         " FROM mdl_user as users, mdl_activequiz as activequiz, mdl_grade_grades as grades, mdl_grade_items as items"
         " WHERE grades.itemid = items.id AND items.courseid = activequiz.course " + sql_where +
         " AND users.id = grades.userid AND grades.finalgrade is NOT NULL")
@@ -151,10 +152,10 @@ def insert_active_quizzes(query):
             }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -207,10 +208,10 @@ def insert_grades(query, sql_where):
         }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, False)
+            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, True)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, False)
+            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, True)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -243,10 +244,10 @@ def insert_grades(query, sql_where):
             }
 
             try:
-                OpenLrw.post_lineitem(item, JWT, False)
+                OpenLrw.post_lineitem(item, JWT, True)
             except ExpiredTokenException:
                 JWT = OpenLrw.generate_jwt()
-                OpenLrw.post_lineitem(item, JWT, False)
+                OpenLrw.post_lineitem(item, JWT, True)
             except InternalServerErrorException as e:
                 exit_log('Unable to create the LineItem ' + item_id, e.message.content)
             except requests.exceptions.ConnectionError as e:
@@ -258,20 +259,23 @@ def insert_grades(query, sql_where):
     return len(results)
 
 
+# -------------- MAIN --------------
+OpenLrw.pretty_message("Caution", "For a better performance, make sure MongoDB indices are created.")
+time.sleep(0.7)
 sql_where = ""
 
+# If the script runs with arguments we use them
 if len(sys.argv) == 2:
     if re.match(TIMESTAMP_REGEX, sys.argv[1]):
-        sql_where = "AND timecreated >= " + sys.argv[1]
+        sql_where = "AND grades.timemodified >= " + sys.argv[1]
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM)"])
 elif len(sys.argv) == 3:
     if re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2]):
-        sql_where = "AND timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
+        sql_where = "AND grades.timemodified >= " + sys.argv[1] + " AND grades.timemodified <= " + sys.argv[2]
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
 
-# -------------- DATABASES --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
@@ -285,8 +289,6 @@ db.close()
 
 OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
 
-message = sys.argv[0] + " executed in " + measure_time() + "seconds " \
-                                                           "\n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(
-    COUNTER)
+message = sys.argv[0] + " executed in " + measure_time() + "seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
 
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
