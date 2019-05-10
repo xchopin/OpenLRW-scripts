@@ -14,6 +14,7 @@ import os
 import requests
 import datetime
 import json
+import re
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -27,9 +28,7 @@ DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 
 URI = SETTINGS['api']['uri'] + '/api/classes/'
-
 MAIL = None
-
 COUNTER = 0
 
 
@@ -47,11 +46,11 @@ def exit_log(result_id, reason):
     sys.exit(0)
 
 
-def insert_quizzes(query):
+def insert_quizzes(query, sql_where):
     # Query to get quizzes
-    query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified, quiz.course"
+    query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified as timemodified, quiz.course"
                   " FROM mdl_user as users, mdl_quiz_grades as grades, mdl_quiz as quiz"
-                  " WHERE grades.quiz = quiz.id AND users.id = grades.userid")
+                  " WHERE grades.quiz = quiz.id AND users.id = grades.userid" + sql_where )
 
     results = query.fetchall()
 
@@ -100,9 +99,9 @@ def insert_quizzes(query):
 def insert_active_quizzes(query):
     # Query to get active quizzes
     query.execute(
-        "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified, activequiz.course"
+        "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified as timemodified, activequiz.course"
         " FROM mdl_user as users, mdl_activequiz as activequiz, mdl_grade_grades as grades, mdl_grade_items as items"
-        " WHERE grades.itemid = items.id AND items.courseid = activequiz.course"
+        " WHERE grades.itemid = items.id AND items.courseid = activequiz.course " + sql_where +
         " AND users.id = grades.userid AND grades.finalgrade is NOT NULL")
 
     results = query.fetchall()
@@ -167,11 +166,11 @@ def insert_active_quizzes(query):
     return len(results)
 
 
-def insert_grades(query):
+def insert_grades(query, sql_where):
     query.execute(
-        "SELECT users.username, grades.timecreated, grades.id, grades.finalgrade, grades.itemid,items.itemname, items.grademax, items.grademin, items.courseid"
-        " FROM arche_prod.mdl_grade_grades as grades, arche_prod.mdl_user as users, arche_prod.mdl_grade_items as items"
-        " WHERE users.id = grades.userid"
+        "SELECT users.username, grades.timemodified, grades.id, grades.finalgrade, grades.itemid,items.itemname, items.grademax, items.grademin, items.courseid"
+        " FROM mdl_grade_grades as grades, mdl_user as users, mdl_grade_items as items"
+        " WHERE users.id = grades.userid " + sql_where +
         " AND items.id = grades.itemid"
         " AND finalgrade IS NOT NULL"
         " AND itemname IS NOT NULL;")
@@ -259,13 +258,26 @@ def insert_grades(query):
     return len(results)
 
 
+sql_where = ""
+
+if len(sys.argv) == 2:
+    if re.match(TIMESTAMP_REGEX, sys.argv[1]):
+        sql_where = "AND timecreated >= " + sys.argv[1]
+    else:
+        OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM)"])
+elif len(sys.argv) == 3:
+    if re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2]):
+        sql_where = "AND timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
+    else:
+        OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+
 # -------------- DATABASES --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-quiz = insert_quizzes(query)
-active_quiz = insert_active_quizzes(query)
-items = insert_grades(query)
+quiz = insert_quizzes(query, sql_where)
+active_quiz = insert_active_quizzes(query, sql_where)
+items = insert_grades(query, sql_where)
 
 COUNTER = quiz + active_quiz + items
 
