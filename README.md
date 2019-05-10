@@ -200,9 +200,23 @@ $ python collections/Classes/Moodle/import_classes.py
  
 This script imports the `Quizzes`, `Active quizzes` and the `Grades` from the Moodle database. Checking method is used for HTTP Post so you can use the script for populating and updating your collection.
  
-##### Import results from Moodle
+##### Import all the results
 ```bash
 $ python collections/Results/Moodle/import_results.py
+```  
+
+##### Import all the results from a timestamp
+> The condition is made on Moodle's timemodified attribute
+
+```bash
+$ python collections/Results/Moodle/import_results.py TIMESTAMP
+```  
+
+##### Import all the results from a timestamp to another one
+> The condition is made on Moodle's timemodified attribute
+
+```bash
+$ python collections/Results/Moodle/import_results.py TIMESTAMP TIMESTAMP
 ```  
 
 #### - Apogée
