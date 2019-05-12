@@ -172,8 +172,8 @@ $ python collections/Events/Moodle/import_last_events.py
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
 </p>
  
- This script imports the Moodle classes, it also checks duplicates so you can run it several times for updates. <br>
- It also uses a .txt file to allow you to active the class you want (other will be inactive).
+ This script imports the Moodle classes, it uses a .txt file to allow you to active the class you want (other will be inactive).  <br>
+ It also checks duplicates so you can run it several times for updates.
  
  ⚠ **The template file is located at `data/Classes/active_classes.txt.dist`.**
  
