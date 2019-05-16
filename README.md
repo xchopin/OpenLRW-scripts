@@ -44,6 +44,8 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    ```
 
 - #### B. python-ldap
+> :warning: This library requires [python-devel and openldap](https://stackoverflow.com/a/4768467/10408181)
+
    ```
    $ pip install python-ldap
    ``` 
