@@ -60,7 +60,12 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    ```
    $ pip install mysqlclient
    ```
- 
+   
+- #### E. OpenLRW  
+   > :warning: This library requires mariadb-devel `yum install mariadb-devel`
+   ```
+   $ pip install mysqlclient
+   ``` 
  
 ## III. Usage
 ### 1. Users
