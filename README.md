@@ -44,7 +44,7 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    ```
 
 - #### B. python-ldap
-> :warning: This library requires [python-devel and openldap](https://stackoverflow.com/a/4768467/10408181)
+   > :warning: This library requires [python-devel and openldap](https://stackoverflow.com/a/4768467/10408181)
 
    ```
    $ pip install python-ldap
@@ -55,7 +55,8 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    $ pip install pyyaml
    ```
    
-- #### D. MySQLdb   
+- #### D. MySQLdb  
+   > :warning: This library requires mariadb-devel `yum install mariadb-devel`
    ```
    $ pip install mysqlclient
    ```
