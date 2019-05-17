@@ -12,7 +12,7 @@ import os
 import sys
 import requests
 
-from bootstrap.helpers import *
+from helpers import *
 
 logging.basicConfig(filename=os.path.dirname(__file__) + '/maintenance_mode.log', level=logging.ERROR)
 
