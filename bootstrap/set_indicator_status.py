@@ -44,10 +44,10 @@ if len(sys.argv) == 2:
 else:
     OpenLRW.pretty_error("Wrong usage", ["This script requires a string argument"])
 
-OpenLrw.generate_jwt()
+jwt = OpenLrw.generate_jwt()
 
 try:
-    OpenLrw.change_indicator()
+    OpenLrw.change_indicator(status, jwt)
 except BadRequestException as e:
     exit_log(e.message.content)
 except InternalServerErrorException as e:
