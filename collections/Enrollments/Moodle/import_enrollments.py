@@ -81,16 +81,16 @@ for enrollment in enrollments:
 
     try:
         time.sleep(0.01)
-        OpenLrw.post_enrollment(class_id, json, JWT, False)
+        OpenLrw.post_enrollment(class_id, json, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_enrollment(class_id, json, JWT, False)
+        OpenLrw.post_enrollment(class_id, json, JWT, True)
     except InternalServerErrorException:
         exit_log(enrollment_id, "Error 500")
     except requests.exceptions.ConnectionError as e:
         time.sleep(0.5)
         try:  # last try
-            OpenLrw.post_enrollment(class_id, json, JWT, False)
+            OpenLrw.post_enrollment(class_id, json, JWT, True)
         except requests.exceptions.ConnectionError as e:
             exit_log(enrollment_id, e)
 
