@@ -55,4 +55,5 @@ except InternalServerErrorException as e:
 except requests.exceptions.ConnectionError as e:
     exit_log(e)
 
+OpenLrw.pretty_message('Script finished', 'Indicator status has been set to ' + sys.argv[1])
 OpenLrw.mail_server(sys.argv[0], 'Indicator status has been set to ' + sys.argv[1])
