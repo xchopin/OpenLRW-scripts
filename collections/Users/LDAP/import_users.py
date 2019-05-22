@@ -51,7 +51,7 @@ def populate(check, jwt):
                 'sourcedId': attributes['uid'][0],
                 'givenName': attributes['displayName'][0],
                 'metadata': {
-                    'ldap_business_category': attributes['businessCategory'][0]
+                    'ldapBusinessCategory': attributes['businessCategory'][0]
                 }
             }
 
