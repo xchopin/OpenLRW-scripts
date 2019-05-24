@@ -10,6 +10,7 @@ ldap:
   password: ""
   base_dn: ""
   page_size: 1000
+  filter: "uid=*"
 
 email:
   from: "scripts@openlrw.dev"
