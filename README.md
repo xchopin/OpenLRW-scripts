@@ -8,7 +8,7 @@
 
 **This is a repository of different scripts used at [University of Lorraine](https://en.wikipedia.org/wiki/University_of_Lorraine) to populate the collections of the OpenLRW API. 
 <br> <br>
-All these scripts are open-source, so feel free to edit/use them!**
+All these scripts are made for the Educational community, don't hesitate to contribute!**
 
 
 ## I. Requirements
@@ -23,7 +23,20 @@ All these scripts are open-source, so feel free to edit/use them!**
  - #### Logstash Scripts
     - [Logstash ≥ 2.4](https://www.elastic.co/fr/downloads/logstash) 
 
-## II. Get started
+
+## II. Table of contents
+* [User](#1-user)
+* [Event](#2-event)
+* [Class](#3-class)
+* [Result](#4-result)
+* [LineItem](#5-lineitem)
+* [Enrollment](#6-enrollment)
+
+
+
+
+
+## III. Get started
 ### 1. Clone the repository
 ```
 $ git clone https://github.com/xchopin/openlrw-scripts
@@ -66,8 +79,8 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    $ pip install openlrw
    ``` 
  
-## III. Usage
-### 1. Users
+## IV. Usage
+### 1. User
 #### - Import users
  <p align="center">
    <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
@@ -118,7 +131,7 @@ $ python collections/Users/Apogee/update_baccalaureat.py
 
 <hr>
 
-### 2. Events
+### 2. Event
 #### - CAS Authentications
  <p align="center">
    <img src="https://img.shields.io/badge/language-Bash and Logstash-brightgreen.svg?style=flat-square" alt="language used">
@@ -173,7 +186,7 @@ $ python collections/Events/Moodle/import_last_events.py
  
  
 ### 3. Class
-#### - Moodle LMS
+#### - Import from Moodle LMS
  <p align="center">
    <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-MySQL (Moodle)-blue.svg?style=flat-square" alt="sources used">
@@ -191,10 +204,24 @@ $ cp data/Classes/active_classes.txt.dist data/Classes/active_classes.txt
 Then add the class id (one per line), you can add comments with the # character. <br>
 In order to set all your classes as active just let the file empty.
    
-##### Import classes from Moodle
+##### Run the script
 ```bash
 $ python collections/Classes/Moodle/import_classes.py
 ```  
+#### - Clear the collection
+
+<p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-None -blue.svg?style=flat-square" alt="sources used">
+</p>
+
+This script will clear the whole Class collection from MongoDB (it keeps the indices though), it performs only one HTTP DELETE request.
+
+##### Run the script
+
+```bash
+$ python collections/Classes/delete_all_classes.py
+```
 
   <hr>
  
@@ -296,7 +323,7 @@ $ python collections/LineItems/Apogee/map_classes.py
  <hr>
 
 
-### 6. Enrollments
+### 6. Enrollment
 #### - Moodle LMS
  <p align="center">
    <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
@@ -309,6 +336,21 @@ This script imports the enrollments from Moodle with a timestamp argument (from)
 ```bash
 $ python collections/Enrollments/Moodle/import_enrollments.py TIMESTAMP
 ```  
+
+#### - Clear the collection
+
+<p align="center">
+   <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
+   <img src="https://img.shields.io/badge/sources used-None -blue.svg?style=flat-square" alt="sources used">
+</p>
+
+This script will clear the whole Enrollment collection from MongoDB (it keeps the indices though), it performs only one HTTP DELETE request.
+
+##### Run the script
+
+```bash
+$ python collections/Enrollments/delete_all_enrollments.py
+```
 
 
 ## V. License
