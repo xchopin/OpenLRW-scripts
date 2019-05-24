@@ -18,7 +18,8 @@ logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=log
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']
 FILTER = SETTINGS['ldap']['filter']
-ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
+#ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
+ATTRLIST = ['uid', 'displayName']
 COUNTER = 0
 
 def populate(check, jwt):
@@ -44,16 +45,16 @@ def populate(check, jwt):
             OpenLRW.pretty_error('Couldn\'t pull LDAP results', '%s' % e)
 
         for dn, attributes in rdata:
-            if 'businessCategory' not in attributes:
-                print attributes['uid'][0]
-                continue
+            #if 'businessCategory' not in attributes:
+            #    print attributes['uid'][0]
+            #    continue
 
             json = {
                 'sourcedId': attributes['uid'][0],
-                'givenName': attributes['displayName'][0],
-                'metadata': {
-                    'ldapBusinessCategory': attributes['businessCategory'][0]
-                }
+                'givenName': attributes['displayName'][0]#,
+                #'metadata': {
+                #    'ldapBusinessCategory': attributes['businessCategory'][0]
+                #}
             }
 
             try:
