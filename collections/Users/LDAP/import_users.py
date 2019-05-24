@@ -17,6 +17,7 @@ logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=log
 
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']
+FILTER = SETTINGS['ldap']['filter']
 ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
 COUNTER = 0
 
@@ -33,7 +34,7 @@ def populate(check, jwt):
     while 1 < 2:  # hi deadmau5
         try:
             # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
-            users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, 'uid=*', ATTRLIST, serverctrls=[controls])
+            users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, FILTER, ATTRLIST, serverctrls=[controls])
         except ldap.LDAPError as e:
             OpenLRW.pretty_error('LDAP search failed', '%s' % e)
 
