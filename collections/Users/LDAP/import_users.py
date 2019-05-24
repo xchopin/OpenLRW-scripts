@@ -17,7 +17,9 @@ logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=log
 
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']
-ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
+FILTER = SETTINGS['ldap']['filter']
+#ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
+ATTRLIST = ['uid', 'displayName']
 COUNTER = 0
 
 def populate(check, jwt):
@@ -33,7 +35,7 @@ def populate(check, jwt):
     while 1 < 2:  # hi deadmau5
         try:
             # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
-            users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, 'uid=*', ATTRLIST, serverctrls=[controls])
+            users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, FILTER, ATTRLIST, serverctrls=[controls])
         except ldap.LDAPError as e:
             OpenLRW.pretty_error('LDAP search failed', '%s' % e)
 
@@ -43,16 +45,13 @@ def populate(check, jwt):
             OpenLRW.pretty_error('Couldn\'t pull LDAP results', '%s' % e)
 
         for dn, attributes in rdata:
-            if 'businessCategory' not in attributes:
-                print attributes['uid'][0]
-                continue
+            #if 'businessCategory' not in attributes:
+            #    print attributes['uid'][0]
+            #    continue
 
             json = {
                 'sourcedId': attributes['uid'][0],
-                'givenName': attributes['displayName'][0],
-                'metadata': {
-                    'ldapBusinessCategory': attributes['businessCategory'][0]
-                }
+                'givenName': attributes['displayName'][0]
             }
 
             try:
