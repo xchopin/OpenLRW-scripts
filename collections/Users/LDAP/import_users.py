@@ -51,7 +51,8 @@ def populate(check, jwt):
 
             json = {
                 'sourcedId': attributes['uid'][0],
-                'givenName': attributes['displayName'][0]
+                'givenName': attributes['displayName'][0],
+                'metadata' : {}
             }
 
             try:
