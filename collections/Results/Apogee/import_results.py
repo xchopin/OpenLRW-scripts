@@ -27,7 +27,10 @@ RESULT_COUNTER = 0
 LINEITEM_COUNTER = 0
 MAIL = None
 FILE_NAME = 'data/Results/apogee_results.csv'
-RESULT_NAMES = 'data/Results/name.csv'
+RESULT_NAMES = SETTINGS['apogee']['lineitem_name_filepath']
+
+if RESULT_NAMES is None or RESULT_NAMES == "":
+    OpenLrw.pretty_error("Settings attribute not filled", "'lineitem_name_filepath' attribute from settings.yml is empty")
 
 
 def exit_log(result_id, reason):
