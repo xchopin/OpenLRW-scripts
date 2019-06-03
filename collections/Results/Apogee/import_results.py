@@ -32,6 +32,11 @@ RESULT_NAMES = SETTINGS['apogee']['lineitem_name_filepath']
 if RESULT_NAMES is None or RESULT_NAMES == "":
     OpenLrw.pretty_error("Settings attribute not filled", "'lineitem_name_filepath' attribute from settings.yml is empty")
 
+if len(sys.argv) < 2:
+    OpenLRW.pretty_error("Missing argument", ["A filepath is required to access to Apogee results (.csv) "])
+else:
+    FILE_NAME = sys.argv[1]
+
 
 def exit_log(result_id, reason):
     """
