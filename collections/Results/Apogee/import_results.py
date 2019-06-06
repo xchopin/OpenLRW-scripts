@@ -13,7 +13,6 @@ import sys
 import os
 import requests
 import csv
-import uuid
 import json
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
@@ -26,14 +25,14 @@ URI = SETTINGS['api']['uri'] + '/api'
 RESULT_COUNTER = 0
 LINEITEM_COUNTER = 0
 MAIL = None
-FILE_NAME = 'data/Results/apogee_results.csv'
-RESULT_NAMES = SETTINGS['apogee']['lineitem_name_filepath']
+RESULT_NAMES = SETTINGS['apogee']['mapping_filepath']
 
 if RESULT_NAMES is None or RESULT_NAMES == "":
-    OpenLrw.pretty_error("Settings attribute not filled", "'lineitem_name_filepath' attribute from settings.yml is empty")
+    OpenLrw.pretty_error("Settings parameter not filled", "'mapping_filepath' parameter from settings.yml is empty")
 
 if len(sys.argv) < 2:
-    OpenLRW.pretty_error("Missing argument", ["A filepath is required to access to Apogee results (.csv) "])
+    OpenLRW.pretty_error("Missing argument", ["A filepath is required to access to the Apogee results (.csv file) "])
+    sys.exit(0)
 else:
     FILE_NAME = sys.argv[1]
 
@@ -161,8 +160,8 @@ with f1:
 
 
 OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER) + " - LineItems sent: " + str(LINEITEM_COUNTER))
-message = "import_results.py finished its execution in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
-          + " Results sent : " + str(RESULT_COUNTER) + " - LineItems sent : " + str(LINEITEM_COUNTER)
+message = "Script executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
+          + str(RESULT_COUNTER) + " results sent \n " + str(LINEITEM_COUNTER) + " lineItems sent"
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
 
 

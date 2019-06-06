@@ -31,4 +31,4 @@ db_moodle:
 
 apogee:
     # Path to the file that contains the LineItem names / you should use absolute path
-    lineitem_name_filepath: ""
+    mapping_filepath: ""
