@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.1.0"
+__version__ = "1.1.2"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -25,10 +25,10 @@ URI = SETTINGS['api']['uri'] + '/api'
 RESULT_COUNTER = 0
 LINEITEM_COUNTER = 0
 MAIL = None
-RESULT_NAMES = SETTINGS['apogee']['mapping_filepath']
+RESULT_NAMES = SETTINGS['apogee']['lineitems_name_filepath']
 
 if RESULT_NAMES is None or RESULT_NAMES == "":
-    OpenLrw.pretty_error("Settings parameter not filled", "'mapping_filepath' parameter from settings.yml is empty")
+    OpenLrw.pretty_error("Settings parameter not filled", "'lineitems_name_filepath' parameter from settings.yml is empty")
 
 if len(sys.argv) < 2:
     OpenLRW.pretty_error("Missing argument", ["A filepath is required to access to the Apogee results (.csv file) "])
