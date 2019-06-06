@@ -30,5 +30,5 @@ db_moodle:
   password: ""
 
 apogee:
-    # Path to the file that contains the LineItem names / you should use an absolute path
+    # Path to the file that contains the LineItem names [USE AN ABSOLUTE PATH]
     mapping_filepath: ""
