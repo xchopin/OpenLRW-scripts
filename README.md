@@ -287,7 +287,8 @@ AAAAA4;Internship
 > Add the results by checking duplicates. It will add LineItem objects if they don't exist. In order to link these new LineItems to a Moodle class you will have a to use a script (more details in LineItems section)
 
 ```bash
-$ python collections/Results/Apogee/import_results.py
+$ python collections/Results/Apogee/import_results.py /PATH_TO_YOUR_EXTRACTIONS/FILE.csv
+
 ```   
  
 <hr>
