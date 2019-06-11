@@ -72,91 +72,95 @@ mapping = list(csv.reader(open(RESULT_NAMES, "rb"), delimiter=';'))
 with f1:
         c1 = csv.reader(f1, delimiter=";")
         for row in c1:
-            username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
+            try:
+                username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
 
-            for x in range(7, len(row)):  # grades
-                data = row[x].split('-')
-                grade = {'type': data[0], 'exam_id': data[1], 'score': data[2], 'status': None}
-                if len(data) > 3:
-                    grade['status'] = data[3]
+                for x in range(7, len(row)):  # grades
+                    data = row[x].split('-')
+                    grade = {'type': data[0], 'exam_id': data[1], 'score': data[2], 'status': None}
+                    if len(data) > 3:
+                        grade['status'] = data[3]
 
-                string = str(username) + str(grade['exam_id']) + str(grade['score'] + str(year))
-                sourcedId = hashlib.sha1(string)
-                json = {
-                    'sourcedId': str(sourcedId.hexdigest()),
-                    'score': str(grade['score']),
-                    'resultStatus': grade['status'],
-                    'student': {
-                        'sourcedId': username
-                    },
-                    'lineitem': {
-                        'sourcedId': grade['exam_id']
-                    },
-                    'metadata': {
-                        'type': grade['type'],
-                        'year': year,
-                        'category': 'Apogée'
-                    }
-                }
-
-                # Let's send the result object
-                RESULT_COUNTER = RESULT_COUNTER + 1
-
-                try:
-                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, True)
-                except ExpiredTokenException:
-                    JWT = OpenLrw.generate_jwt()
-                    OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, True)
-                except BadRequestException as e:
-                    exit_log(grade['exam_id'], e.message.content)
-                except InternalServerErrorException as e:
-                    exit_log(grade['exam_id'], e.message.content)
-                except requests.exceptions.ConnectionError as e:
-                    exit_log('Unable to create the Class "Apogée"', e)
-
-                # Does the lineItem exist?
-                res = False
-
-                for i in range(0, len(line_items)):
-                    if line_items[i]['lineItem']['sourcedId'] == grade['exam_id']:
-                        res = True
-                        break
-
-                # If it does not we will create it
-                if not res:
-
-                    title = "null"
-                    for line in mapping:
-                        code_elp, name, etp = line
-                        if code_elp == grade['exam_id']:
-                            title = name
-
-                    item = {
-                        "sourcedId": grade['exam_id'],
-                        "lineItem": {
-                            "sourcedId": grade['exam_id']
+                    string = str(username) + str(grade['exam_id']) + str(grade['score'] + str(year))
+                    sourcedId = hashlib.sha1(string)
+                    json = {
+                        'sourcedId': str(sourcedId.hexdigest()),
+                        'score': str(grade['score']),
+                        'resultStatus': grade['status'],
+                        'student': {
+                            'sourcedId': username
                         },
-                        "title": title,
-                        "description": "null",
-                        "assignDate": "",
-                        "dueDate": "",
-                        "class": {
-                            "sourcedId": "unknown_apogee"
+                        'lineitem': {
+                            'sourcedId': grade['exam_id']
+                        },
+                        'metadata': {
+                            'type': grade['type'],
+                            'year': year,
+                            'category': 'Apogée'
                         }
                     }
 
-                    # Add new line item to the dynamic array
-                    line_items.append(item)
-                    LINEITEM_COUNTER = LINEITEM_COUNTER + 1
+                    # Let's send the result object
+                    RESULT_COUNTER = RESULT_COUNTER + 1
+
                     try:
-                        OpenLrw.post_lineitem(item, JWT, True)  # We check since the line item can exist
+                        OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, True)
                     except ExpiredTokenException:
                         JWT = OpenLrw.generate_jwt()
-                        OpenLrw.post_lineitem(item, JWT, True)
+                        OpenLrw.post_result_for_a_class('unknown_apogee', json, JWT, True)
+                    except BadRequestException as e:
+                        exit_log(grade['exam_id'], e.message.content)
                     except InternalServerErrorException as e:
                         exit_log(grade['exam_id'], e.message.content)
                     except requests.exceptions.ConnectionError as e:
-                        exit_log('Unable to create the LineItem ' + grade['exam_id'], e)
+                        exit_log('Unable to create the Class "Apogée"', e)
+
+                    # Does the lineItem exist?
+                    res = False
+
+                    for i in range(0, len(line_items)):
+                        if line_items[i]['lineItem']['sourcedId'] == grade['exam_id']:
+                            res = True
+                            break
+
+                    # If it does not we will create it
+                    if not res:
+
+                        title = "null"
+                        for line in mapping:
+                            code_elp, name, etp = line
+                            if code_elp == grade['exam_id']:
+                                title = name
+
+                        item = {
+                            "sourcedId": grade['exam_id'],
+                            "lineItem": {
+                                "sourcedId": grade['exam_id']
+                            },
+                            "title": title,
+                            "description": "null",
+                            "assignDate": "",
+                            "dueDate": "",
+                            "class": {
+                                "sourcedId": "unknown_apogee"
+                            }
+                        }
+
+                        # Add new line item to the dynamic array
+                        line_items.append(item)
+                        LINEITEM_COUNTER = LINEITEM_COUNTER + 1
+                        try:
+                            OpenLrw.post_lineitem(item, JWT, True)  # We check since the line item can exist
+                        except ExpiredTokenException:
+                            JWT = OpenLrw.generate_jwt()
+                            OpenLrw.post_lineitem(item, JWT, True)
+                        except InternalServerErrorException as e:
+                            exit_log(grade['exam_id'], e.message.content)
+                        except requests.exceptions.ConnectionError as e:
+                            exit_log('Unable to create the LineItem ' + grade['exam_id'], e)
+
+            except UnicodeDecodeError as e:
+                exit_log(str(e.reason), str(row))
 
 
 OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER) + " - LineItems sent: " + str(LINEITEM_COUNTER))
