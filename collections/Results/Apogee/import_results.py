@@ -70,9 +70,8 @@ f1 = open(FILE_NAME, 'r')
 mapping = list(csv.reader(open(RESULT_NAMES, "rb"), delimiter=';'))
 # - - - - PARSING THE CSV FILE - - - -
 with f1:
-        c1 = csv.reader(f1, delimiter=";", encoding='utf_8')
+        c1 = csv.reader(f1, delimiter=";")
         for row in c1:
-            try:
                 username, year, degree_id, degree_version, inscription, term_id, term_version = row[0], row[1], row[2], row[3], row[4], row[5], row[6]
                 for x in range(7, len(row)):  # grades
                     data = row[x].split('-')
@@ -157,10 +156,6 @@ with f1:
                             exit_log(grade['exam_id'], e.message.content)
                         except requests.exceptions.ConnectionError as e:
                             exit_log('Unable to create the LineItem ' + grade['exam_id'], e)
-
-            except UnicodeDecodeError as e:
-                exit_log(" -- Error while parsing the csv file", str(row) + "\n" + str(e.reason) + "\n" + str(e.object))
-
 
 OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER) + " - LineItems sent: " + str(LINEITEM_COUNTER))
 message = "Script executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
