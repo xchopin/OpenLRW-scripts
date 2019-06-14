@@ -16,7 +16,7 @@ import requests
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=logging.BASIC_FORMAT)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/users.log', level=logging.BASIC_FORMAT)
 
 jwt = OpenLrw.generate_jwt()  # Generate a JSON Web Token for using OneRoster routes
 

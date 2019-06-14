@@ -2,9 +2,9 @@
 # coding: utf-8
 
 __author__ = "Xavier Chopin"
-__copyright__ = "Copyright 2018, University of Lorraine"
+__copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.0"
+__version__ = "1.0.2"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -19,7 +19,7 @@ import json
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(filename=os.path.dirname(__file__) + '/map_classes.log', level=logging.ERROR)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/map_classes.log', level=logging.ERROR)
 
 COUNTER = 0
 GRADES_FILE = 'data/LineItems/mapping.csv'

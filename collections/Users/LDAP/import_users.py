@@ -14,7 +14,7 @@ import sys, os
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(filename=os.path.dirname(__file__) + '/users.log', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/users.log', level=logging.DEBUG)
 
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']
