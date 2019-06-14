@@ -19,7 +19,7 @@ import re
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_enrollments.log', level=logging.ERROR)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_enrollments.log', level=logging.INFO)
 
 # -------------- GLOBAL --------------
 TIMESTAMP_REGEX = r'^(\d{10})?$'

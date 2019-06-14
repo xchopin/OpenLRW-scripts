@@ -26,7 +26,7 @@ This script takes two arguments : from and to (timestamps)
 It queries the production database
 """
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_events.log', level=logging.ERROR)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_events.log', level=logging.INFO)
 
 
 def get_module_name(module_type, module_id):

@@ -19,7 +19,7 @@ import requests
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_classes.log', level=logging.ERROR)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_classes.log', level=logging.INFO)
 
 # -------------- GLOBAL --------------
 DB_HOST = SETTINGS['db_moodle']['host']
