@@ -95,3 +95,4 @@ OpenLrw.pretty_message("Script finished", "Total number of line items edited : "
 message = sys.argv[0] + "(Mapping Apogée CSV and Results) executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "LineItems edited : " + str(COUNTER) + " on " + str(LINEITEM_TOTAL)
 
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
+logging.info(message)

@@ -127,4 +127,4 @@ OpenLRW.pretty_message("Script finished", "Total number of line items sent : " +
 message = str(sys.argv[0]) + " finished its execution in " + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items sent : " + str(COUNTER)
 
 OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
-
+logging.info(message)

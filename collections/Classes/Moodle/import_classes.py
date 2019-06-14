@@ -131,4 +131,4 @@ message = sys.argv[0] + "executed in " + measure_time() + " seconds" \
           " \n\n -------------- \n SUMMARY \n -------------- \n" + str(len(courses)) + " classes sent"
 
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
-
+logging.info(message)

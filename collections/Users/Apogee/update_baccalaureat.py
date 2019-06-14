@@ -75,3 +75,4 @@ with csv_file:
     time = measure_time()
 
     OpenLrw.mail_server(sys.argv[0] + " executed", str(counter) + " users updated in " + measure_time() + " seconds")
+    logging.info(str(counter) + " users updated in " + measure_time() + " seconds")

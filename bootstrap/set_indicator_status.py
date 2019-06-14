@@ -57,3 +57,4 @@ except requests.exceptions.ConnectionError as e:
 
 OpenLrw.pretty_message('Script finished', 'Indicator status has been set to ' + sys.argv[1])
 OpenLrw.mail_server(sys.argv[0], 'Indicator status has been set to ' + sys.argv[1])
+logging.info('Indicator status has been set to ' + sys.argv[1])

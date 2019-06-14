@@ -161,5 +161,5 @@ OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER)
 message = "Script executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
           + str(RESULT_COUNTER) + " results sent \n " + str(LINEITEM_COUNTER) + " lineItems sent"
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
-
+logging.info(message)
 

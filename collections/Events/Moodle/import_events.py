@@ -241,3 +241,4 @@ OpenLRW.pretty_message("Script executed", "Total number of events : " + str(TOTA
 
 message = str(sys.argv[0]) + " finished its execution in " + measure_time() +" seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of events : " + str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
 OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
+logging.info(message)

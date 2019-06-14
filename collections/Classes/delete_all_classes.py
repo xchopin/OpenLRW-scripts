@@ -44,3 +44,4 @@ OpenLRW.pretty_message("Script finished", "Class collection deleted")
 
 
 OpenLrw.mail_server(sys.argv[0], "Class collection deleted")
+logging.info("Collection deleted")

@@ -10,6 +10,7 @@ __status__ = "Production"
 
 import json
 import sys, os
+
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
@@ -116,8 +117,8 @@ elif sys.argv[1] == 'update':
 
 OpenLRW.pretty_message("Script finished", "Total number of users imported : " + str(COUNTER))
 
-message = str("LDAP Users imported in " + measure_time() + " seconds")
+message = str("LDAP Users imported (" + str(sys.argv[1]) + " method) in " + measure_time() + " seconds")
 
 OpenLrw.mail_server(str(sys.argv[0]) + " summary", message)
-
+logging.info(message)
 sys.exit(0)

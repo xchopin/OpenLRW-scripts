@@ -42,5 +42,5 @@ except requests.exceptions.ConnectionError as e:
 
 OpenLRW.pretty_message("Script finished", "Enrollment collection deleted")
 
-
 OpenLrw.mail_server(sys.argv[0], "Enrollment collection deleted")
+logging.info("Collection deleted")
