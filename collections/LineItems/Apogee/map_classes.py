@@ -45,9 +45,15 @@ OpenLRW.pretty_message("CSV File used for the import", GRADES_FILE)
 
 JWT = OpenLrw.generate_jwt()
 
+lineitems = OpenLrw.http_auth_get('/api/classes/unknown_apogee/lineitems', JWT)
+classes = OpenLrw.http_auth_get('/api/classes', JWT)
 
-lineitems = OpenLrw.oneroster_get('/api/classes/unknown_apogee/lineitems', JWT)
-classes = OpenLrw.oneroster_get('/api/classes', JWT)
+if lineitems is None:
+    OpenLrw.pretty_error('Empty Collection', 'You have to populate the LineItem collection before using this script')
+
+if classes is None:
+    OpenLrw.pretty_error('Empty Collection', 'You have to populate the Class collection before using this script')
+
 
 lineitems_to_fix = json.loads(lineitems)
 
@@ -62,31 +68,37 @@ for klass in classes:
         pass  # classCode is not defined, let skip
 
 LINEITEM_TOTAL = len(lineitems_to_fix)
+
 # Parse the file to get the "ELP" element in the first by matching the LineItem sourcedId
-
-
-
 for lineItem in lineitems_to_fix:
     for klass in classes_with_classcode:
-        classcode = klass["klass"]["metadata"]["classCode"]
-        if classcode == lineItem['sourcedId']:
-            data = {
-                "sourcedId": lineItem["sourcedId"],
-                "class": {
-                    "sourcedId": klass["classSourcedId"],
-                    "title": lineItem["title"]
+        classcodes = klass["klass"]["metadata"]["classCode"]
+
+        array_of_classcodes = classcodes.split(',')
+
+        for classcode in array_of_classcodes:
+            if classcode == lineItem['sourcedId']:
+                data = {
+                    "sourcedId": lineItem["sourcedId"],
+                    "class": {
+                        "sourcedId": klass["classSourcedId"],
+                        "title": lineItem["title"]
+                    }
                 }
-            }
-            COUNTER = COUNTER + 1
-            try:
-                OpenLrw.post_lineitem(data, JWT, True)
-            except ExpiredTokenException:
-                JWT = OpenLrw.generate_jwt()
-                OpenLrw.post_lineitem(data, JWT, True)
-            except InternalServerErrorException as e:
-                exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e.message.content)
-            except requests.exceptions.ConnectionError as e:
-                exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e)
+                COUNTER = COUNTER + 1
+                try:
+                    OpenLrw.post_lineitem(data, JWT, True)
+                except ExpiredTokenException:
+                    JWT = OpenLrw.generate_jwt()
+                    OpenLrw.post_lineitem(data, JWT, True)
+                except InternalServerErrorException as e:
+                    exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e.message.content)
+                except requests.exceptions.ConnectionError as e:
+                    exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e)
+
+
+
+
 
 
 
