@@ -121,7 +121,7 @@ with f1:
                             res = True
                             break
 
-                    # If it does not we will create it
+                    # If it doesn't we will create it
                     if not res:
 
                         title = "null"
@@ -148,7 +148,7 @@ with f1:
                         line_items.append(item)
                         LINEITEM_COUNTER = LINEITEM_COUNTER + 1
                         try:
-                            OpenLrw.post_lineitem(item, JWT, True)  # We check since the line item can exist
+                            OpenLrw.post_lineitem(item, JWT, True)  # We check since the line item can already exist
                         except ExpiredTokenException:
                             JWT = OpenLrw.generate_jwt()
                             OpenLrw.post_lineitem(item, JWT, True)
