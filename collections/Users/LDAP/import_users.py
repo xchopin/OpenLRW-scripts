@@ -46,11 +46,9 @@ def populate(check, jwt):
             OpenLRW.pretty_error('Couldn\'t pull LDAP results', '%s' % e)
 
         for dn, attributes in rdata:
-            #if 'businessCategory' not in attributes:
-            #    print attributes['uid'][0]
-            #    continue
 
             json = {
+                'status': 'inactive',
                 'sourcedId': attributes['uid'][0],
                 'givenName': attributes['displayName'][0],
                 'metadata' : {}
