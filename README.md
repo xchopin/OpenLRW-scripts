@@ -80,6 +80,14 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
    ``` 
  
 ## IV. Usage
+## Global flags
+```
+-v / --verbose : to print all the HTTP calls
+-no-mail : to don't send any emails
+-h : help documentation
+
+```
+
 ### 1. User
 #### - Import users
  <p align="center">
@@ -170,7 +178,7 @@ $ sh authentications.sh
  > From a timestamp to another one
  
  ```
- $ python collections/Events/Moodle/import_events.py TIMESTAMP TIMESTAMP
+ $ python collections/Events/Moodle/import_events.py -t TIMESTAMP TIMESTAMP
  ``` 
  
 - ##### Import the events from the 24 last hours
