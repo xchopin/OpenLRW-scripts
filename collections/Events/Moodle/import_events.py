@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -14,6 +14,7 @@ import sys
 import os
 import requests
 import re
+import argparse
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
@@ -27,6 +28,12 @@ It queries the production database
 """
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_events.log', level=logging.INFO)
+
+
+parser = OpenLRW.parser
+parser.add_argument('-t', '--timestamps', nargs='*', required='True', action='store', help='Two timestamps (From and To) for querying Moodle`s database')
+args = vars(OpenLRW.enable_argparse())
+
 
 
 def get_module_name(module_type, module_id):
@@ -161,13 +168,13 @@ DB_PASSWORD = SETTINGS['db_moodle']['password']
 COUNTER_JSON_SENT = 0
 TOTAL_EVENT = 0
 
-if len(sys.argv) == 3:
-    if re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2]):
-        sql_where = "WHERE timecreated >= " + sys.argv[1] + " AND timecreated <= " + sys.argv[2]
-    else:
-        OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+args = args['timestamps']
+
+
+if re.match(TIMESTAMP_REGEX, args[0]) and re.match(TIMESTAMP_REGEX, args[1] ):
+    sql_where = "WHERE timecreated >= " + args[0]+ " AND timecreated <= " + args[1]
 else:
-    OpenLRW.pretty_error("Wrong usage", ["This script requires 2 arguments (timestamps: FROM - TO)"])
+    OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
 
 
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
