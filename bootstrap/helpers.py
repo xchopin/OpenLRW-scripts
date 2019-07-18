@@ -28,7 +28,7 @@ with open(os.path.dirname(__file__) + "/settings.yml", 'r') as dot_yml:
 API_URI = SETTINGS['api']['uri']
 API_USERNAME = SETTINGS['api']['username']
 API_PASSWORD = SETTINGS['api']['password']
-OpenLrw = OpenLRW(API_URI, API_USERNAME, API_PASSWORD)
+OpenLrw = OpenLRW(API_URI, API_USERNAME, API_PASSWORD, False)
 OpenLrw.setup_email('localhost', SETTINGS['email']['from'], SETTINGS['email']['to'])
 TIMESTAMP_REGEX = r'^(\d{10})?$'
 
