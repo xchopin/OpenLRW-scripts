@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2018, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -14,14 +14,21 @@ import sys, os
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/users.log', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                    filename=os.path.dirname(__file__) + '/users.log', level=logging.DEBUG)
+
+parser = OpenLRW.parser
+parser.add_argument('-r', '--reset', action='store_true', help='Clear the User collection and re-import all the users.')
+parser.add_argument('-u', '--update', action='store_true',
+                    help='WARNING: DO NOT USE IF YOUR USERS HAVE METADATA INFORMATION, IT WILL BE ERASED! Update the User collection, it will add new users and  check for each user if there is data to update')
+option = OpenLRW.enable_argparse()
 
 # -------------- GLOBAL --------------
 BASEDN = SETTINGS['ldap']['base_dn']
 FILTER = SETTINGS['ldap']['filter']
-#ATTRLIST = ['uid', 'displayName', 'businessCategory', 'eduPersonPrincipalName']
 ATTRLIST = ['uid', 'displayName']
 COUNTER = 0
+
 
 def populate(check, jwt):
     """
@@ -51,7 +58,7 @@ def populate(check, jwt):
                 'status': 'inactive',
                 'sourcedId': attributes['uid'][0],
                 'givenName': attributes['displayName'][0],
-                'metadata' : {}
+                'metadata': {}
             }
 
             try:
@@ -60,7 +67,7 @@ def populate(check, jwt):
                 jwt = OpenLrw.generate_jwt()
                 OpenLrw.post_user(json, jwt, check)
             COUNTER = COUNTER + 1
-           
+
         # Get cookie for next request
         pctrls = get_ldap_controls(server_ctrls)
         if not pctrls:
@@ -74,14 +81,9 @@ def populate(check, jwt):
 
 
 # -------------- MAIN --------------
-if not (len(sys.argv) == 2 and (sys.argv[1] == 'reset' or sys.argv[1] == 'update')):  # Checking args
-    OpenLRW.pretty_error(
-        "Wrong usage",
-        ["reset: clears the user collection then imports them without checking duplicates", "update: imports new users"]
-    )
 
 try:
-    ldap.set_option(ldap.OPT_REFERRALS, 0)   # Don't follow referrals
+    ldap.set_option(ldap.OPT_REFERRALS, 0)  # Don't follow referrals
     # Ignores server side certificate errors (assumes using LDAPS and self-signed cert).
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
@@ -96,7 +98,7 @@ except ldap.LDAPError as e:
 
 jwt = OpenLrw.generate_jwt()
 
-if sys.argv[1] == 'reset':  # Deletes evey users and inserts them
+if option.reset is True:  # Deletes evey users and inserts them
     users = OpenLrw.get_users(jwt)
     if users:  # It shouldn't expire but it's better to check
         data = json.loads(users)
@@ -109,9 +111,10 @@ if sys.argv[1] == 'reset':  # Deletes evey users and inserts them
     else:
         OpenLRW.pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
     populate(False, jwt)
-elif sys.argv[1] == 'update':
+elif option.update is True:
     populate(True, jwt)
-
+else:
+    OpenLRW.pretty_error("Wrong usage", "Run --help for more information")
 
 OpenLRW.pretty_message("Script finished", "Total number of users imported : " + str(COUNTER))
 
