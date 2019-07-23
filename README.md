@@ -84,7 +84,7 @@ $ cp settings.yml.dist settings.yml ; vi settings.yml
 ```
 -v / --verbose : to print all the HTTP calls
 -no-mail : to don't send any emails
--h : help documentation
+-h / --help : help documentation
 
 ```
 
@@ -172,7 +172,7 @@ $ sh authentications.sh
  > From a timestamp
  
  ```
- $ python collections/Events/Moodle/import_events.py TIMESTAMP
+ $ python collections/Events/Moodle/import_events.py -t TIMESTAMP
  ```  
  
  > From a timestamp to another one
@@ -251,14 +251,14 @@ $ python collections/Results/Moodle/import_results.py
 > The condition is made on Moodle's timemodified attribute
 
 ```bash
-$ python collections/Results/Moodle/import_results.py TIMESTAMP
+$ python collections/Results/Moodle/import_results.py --from TIMESTAMP
 ```  
 
 ##### Import all the results from a timestamp to another one
 > The condition is made on Moodle's timemodified attribute
 
 ```bash
-$ python collections/Results/Moodle/import_results.py TIMESTAMP TIMESTAMP
+$ python collections/Results/Moodle/import_results.py --from TIMESTAMP --to TIMESTAMP
 ```  
 
 #### - Apogée
@@ -343,7 +343,7 @@ This script imports the enrollments from Moodle with a timestamp argument (from)
 
 > Import the Enrollments
 ```bash
-$ python collections/Enrollments/Moodle/import_enrollments.py TIMESTAMP
+$ python collections/Enrollments/Moodle/import_enrollments.py --from TIMESTAMP
 ```  
 
 #### - Clear the collection
