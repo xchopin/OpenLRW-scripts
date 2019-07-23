@@ -22,6 +22,13 @@ from bootstrap.helpers import *
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_results.log', level=logging.INFO)
 
+parser = OpenLRW.parser
+parser.add_argument('-f', '--from', required='True', action='store', help='"From" timestamp for querying Moodle`s database')
+parser.add_argument('-t', '--to', action='store', help='"To" timestamp for querying Moodle`s database')
+args = vars(OpenLRW.enable_argparse())
+
+
+
 # -------------- GLOBAL --------------
 DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
@@ -260,24 +267,27 @@ def insert_grades(query, sql_where):
 
 
 # -------------- MAIN --------------
-OpenLrw.pretty_message("Caution", "For a better performance, make sure MongoDB indices are created.")
-time.sleep(0.7)
 sql_where = ""
 
-# If the script runs with arguments we use them
-if len(sys.argv) == 2:
-    if re.match(TIMESTAMP_REGEX, sys.argv[1]):
-        sql_where = "AND grades.timemodified >= " + sys.argv[1]
+if args['to'] is None:
+    if re.match(TIMESTAMP_REGEX, args['from']):
+        sql_where = "AND grades.timemodified >= " + args['from']
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM)"])
-elif len(sys.argv) == 3:
-    if re.match(TIMESTAMP_REGEX, sys.argv[1]) and re.match(TIMESTAMP_REGEX, sys.argv[2]):
-        sql_where = "AND grades.timemodified >= " + sys.argv[1] + " AND grades.timemodified <= " + sys.argv[2]
+else:
+    if re.match(TIMESTAMP_REGEX, args['from']) and re.match(TIMESTAMP_REGEX, args['to']):
+        sql_where = "AND grades.timemodified >= " + args['from'] + " AND grades.timemodified <= " + args['to']
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
 
+
+OpenLrw.pretty_message("Caution", "For a better performance, make sure MongoDB indices are created.")
+time.sleep(0.7)
+
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
+
+print("Executing...")
 
 quiz = insert_quizzes(query, sql_where)
 active_quiz = insert_active_quizzes(query, sql_where)

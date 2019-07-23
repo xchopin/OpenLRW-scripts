@@ -21,6 +21,12 @@ from bootstrap.helpers import *
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_enrollments.log', level=logging.INFO)
 
+
+parser = OpenLRW.parser
+parser.add_argument('-f', '--from', required='True', action='store', help='Timestamp (FROM) for querying Moodle`s database')
+args = vars(OpenLRW.enable_argparse())
+
+
 # -------------- GLOBAL --------------
 TIMESTAMP_REGEX = r'^(\d{10})?$'
 DB_HOST = SETTINGS['db_moodle']['host']
@@ -51,21 +57,21 @@ db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
 # ----- MAIN -------
-if not (len(sys.argv) > 1):
-    OpenLRW.pretty_error("Wrong usage", ["This script requires at least 1 timestamp argument (from)"])
-else:
-    if not re.match(TIMESTAMP_REGEX, sys.argv[1]):
-        OpenLRW.pretty_error("Wrong usage", ["Argument must be a timestamp (from)"])
+
+if not re.match(TIMESTAMP_REGEX, args['from']):
+    OpenLRW.pretty_error("Wrong usage", ["Argument must be a timestamp (from)"])
 
 query.execute("SELECT assignment.id, user.username, context.instanceid, assignment.userid, assignment.roleid  "
               "FROM mdl_role_assignments as assignment, mdl_context as context, mdl_user as user "
               "WHERE context.id = assignment.contextid "
               "AND user.id = assignment.userid AND (assignment.roleid = 3 OR assignment.roleid = 4 OR assignment.roleid = 5)"
-              "AND assignment.timemodified >= " + sys.argv[1])
+              "AND assignment.timemodified >= " + args['fr'])
 
 enrollments = query.fetchall()
 
 JWT = OpenLrw.generate_jwt()
+
+OpenLRW.pretty_message('Info', 'Executing...')
 
 for enrollment in enrollments:
     enrollment_id, username, class_id, user_id, role = enrollment
@@ -103,3 +109,4 @@ message = "import_enrollments.py finished its execution in " + measure_time() + 
           + str(len(enrollments))
 
 OpenLrw.mail_server("Subject: Moodle Enrollments script finished", message)
+logging.info("Script finished | Total number of enrollments sent : " + str(len(enrollments)))
