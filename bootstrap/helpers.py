@@ -23,7 +23,7 @@ from ldap.controls import SimplePagedResultsControl
 LDAP_24_API = LooseVersion(ldap.__version__) >= LooseVersion('2.4')
 
 with open(os.path.dirname(__file__) + "/settings.yml", 'r') as dot_yml:
-    SETTINGS = yaml.load(dot_yml)
+    SETTINGS = yaml.load(dot_yml, Loader=yaml.SafeLoader)
 
 API_URI = SETTINGS['api']['uri']
 API_USERNAME = SETTINGS['api']['username']
