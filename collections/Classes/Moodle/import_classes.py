@@ -26,11 +26,12 @@ DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
+FILE_PATH = SETTINGS['classes']['active_classes_filepath']
 MAIL = None
-FILE_PATH = './data/Classes/active_classes.txt'
 
 
 # -------------- FUNCTIONS --------------
+
 
 def exit_log(course_id, reason):
     """
