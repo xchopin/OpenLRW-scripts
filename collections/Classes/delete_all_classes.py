@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(__file__) + '/../..')
 from bootstrap.helpers import *
 
 logging.basicConfig(filename=os.path.dirname(__file__) + '/delete_all_classes.log', level=logging.ERROR)
-
+OpenLRW.enable_argparse()  # Otherwise it creates an error
 
 def exit_log(reason):
     """

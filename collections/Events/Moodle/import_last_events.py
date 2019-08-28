@@ -20,6 +20,7 @@ from bootstrap.helpers import *
 from time import gmtime, strftime
 
 logging.basicConfig(filename=os.path.dirname(__file__) + '/import_events.log', level=logging.ERROR)
+OpenLRW.enable_argparse()  # Otherwise it creates an error
 
 # -------------- GLOBAL --------------
 

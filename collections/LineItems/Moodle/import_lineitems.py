@@ -18,6 +18,8 @@ sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_lineitems.log', level=logging.INFO)
+OpenLRW.enable_argparse()  # Otherwise it creates an error
+
 
 # -------------- GLOBAL --------------
 DB_HOST = SETTINGS['db_moodle']['host']
