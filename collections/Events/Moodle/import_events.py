@@ -14,6 +14,7 @@ import sys
 import os
 import requests
 import re
+import json
 import argparse
 
 sys.path.append(os.path.dirname(__file__) + '/../../..')
@@ -23,7 +24,6 @@ from time import gmtime, strftime
 
 """
 Script to send Moodle Events to OpenLRW (Caliper Events)
-This script takes two arguments : from and to (timestamps)
 It queries the production database
 """
 
@@ -31,9 +31,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%
 
 
 parser = OpenLRW.parser
-parser.add_argument('-t', '--timestamps', nargs='*', required='True', action='store', help='Two timestamps (From and To) for querying Moodle`s database')
+parser.add_argument('-t', '--timestamps', action='store', help='Two timestamps (From and To) for querying Moodle`s database')
+parser.add_argument('-u', '--update', action='store_true', help='Import the events with a greater timestamp than the last event stored in the database.')
 args = vars(OpenLRW.enable_argparse())
-
 
 
 def get_module_name(module_type, module_id):
@@ -60,7 +60,7 @@ def get_assignment_name(assignment_id):
     :param assignment_id: assignment id
     :return: assignment name
     """
-    name = "Assignement deleted"  # Default name
+    name = "Deleted assignement"  # Default name
 
     query.execute("SELECT name FROM mdl_assign, mdl_assign_submission "
                   "WHERE mdl_assign_submission.assignment = mdl_assign.id "
@@ -138,6 +138,10 @@ def create_caliper_json(user_id, action, object_id, object_type, object_name, de
                     "@type": "Person"
                 },
                 "action": str(action),
+                "edApp": {
+                    "@id": "moodle",
+                    "@type": "SoftwareApplication"
+                },
                 "object": {
                     "@id": str(object_id),
                     "@type": str(object_type),
@@ -168,13 +172,25 @@ DB_PASSWORD = SETTINGS['db_moodle']['password']
 COUNTER_JSON_SENT = 0
 TOTAL_EVENT = 0
 
-args = args['timestamps']
 
+if args['timestamps'] is not None:
+    args = args['timestamps']
+    if re.match(TIMESTAMP_REGEX, args[0]) and re.match(TIMESTAMP_REGEX, args[1]):
+        sql_where = "WHERE timecreated >= " + args[0]+ " AND timecreated <= " + args[1]
+    else:
+        OpenLrw.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+elif args['update'] is not None:
+    jwt = OpenLrw.generate_jwt()
+    last_event = json.loads(OpenLrw.http_auth_get('/api/events/sources/moodle?page=0&limit=1', jwt))
+    if last_event is not None:
+    	last_event = last_event[0]
+        date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.755Z')
+        timestamp = (date - datetime.datetime(1970,1,1)).total_seconds()
+        sql_where = "WHERE timecreated >= " + str(timestamp)
 
-if re.match(TIMESTAMP_REGEX, args[0]) and re.match(TIMESTAMP_REGEX, args[1] ):
-    sql_where = "WHERE timecreated >= " + args[0]+ " AND timecreated <= " + args[1]
-else:
-    OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+    else:
+        OpenLrw.pretty_error("NO MOODLE EVENTS", "MongoDB does not have any moodle events, please use timestamps argument instead")
+        exit()
 
 
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
@@ -215,7 +231,7 @@ for row_log in rows_log:
         else:
             course_name = "Deleted Course"
 
-        if row["eventName"] == "\core\event\course_viewed": # Course viewed
+        if row["eventName"] == "\core\event\course_viewed":  # Course viewed
             json = create_caliper_json(moodle_students[row["userId"]], "Viewed", row["courseId"], "CourseSection",
                                        course_name, "", row["courseId"], "CourseSection", row["timeCreated"]
             )
@@ -246,6 +262,9 @@ db.close()
 
 OpenLRW.pretty_message("Script executed", "Total number of events : " + str(TOTAL_EVENT) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
 
-message = str(sys.argv[0]) + " finished its execution in " + measure_time() +" seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of events : " + str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
+message = str(sys.argv[0]) + " finished its execution in " + measure_time()
+message += " seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of events : "
+message += str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
+
 OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
 logging.info(message)
