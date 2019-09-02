@@ -2,9 +2,9 @@
 # coding: utf-8
 
 __author__ = "Xavier Chopin"
-__copyright__ = "Copyright 2018, University of Lorraine"
+__copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.2"
+__version__ = "1.0.4"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -19,8 +19,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%
 
 parser = OpenLRW.parser
 parser.add_argument('-r', '--reset', action='store_true', help='Clear the User collection and re-import all the users.')
-parser.add_argument('-u', '--update', action='store_true',
-                    help='WARNING: DO NOT USE IF YOUR USERS HAVE METADATA INFORMATION, IT WILL BE ERASED! Update the User collection, it will add new users and  check for each user if there is data to update')
+parser.add_argument('-u', '--update', action='store_true', help='Add new LDAP users to the User collection')
+parser.add_argument('-fu', '--force-update', action='store_true', help='Reset the data for each user + import the new users')
 option = OpenLRW.enable_argparse()
 
 # -------------- GLOBAL --------------
@@ -30,6 +30,14 @@ ATTRLIST = ['uid', 'displayName']
 COUNTER = 0
 
 
+def diff(first, second):
+    """
+    compute the difference between two lists
+    """
+    second = set(second)
+    return [item for item in first if item not in second]
+
+
 def populate(check, jwt):
     """
      Populates the MongoUser collection by inserting all the LDAP users
@@ -37,9 +45,9 @@ def populate(check, jwt):
     :param jwt: JSON Web Token for OpenLRW
     :return: void
     """
+    counter = 0
     OpenLRW.pretty_message('Initializing', 'Will soon populate the mongoUser collection')
     controls = create_ldap_controls(SETTINGS['ldap']['page_size'])
-    COUNTER = 0
     while 1 < 2:  # hi deadmau5
         try:
             # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
@@ -54,7 +62,7 @@ def populate(check, jwt):
 
         for dn, attributes in rdata:
 
-            json = {
+            data = {
                 'status': 'inactive',
                 'sourcedId': attributes['uid'][0],
                 'givenName': attributes['displayName'][0],
@@ -62,11 +70,11 @@ def populate(check, jwt):
             }
 
             try:
-                OpenLrw.post_user(json, jwt, check)
+                OpenLrw.post_user(data, jwt, check)
             except ExpiredTokenException:
                 jwt = OpenLrw.generate_jwt()
-                OpenLrw.post_user(json, jwt, check)
-            COUNTER = COUNTER + 1
+                OpenLrw.post_user(data, jwt, check)
+            counter = counter + 1
 
         # Get cookie for next request
         pctrls = get_ldap_controls(server_ctrls)
@@ -78,6 +86,81 @@ def populate(check, jwt):
         if not cookie:
             break
     l.unbind()
+
+    return counter
+
+
+def add_new_users_only(jwt):
+    """
+    Add only the new users that are not yet in the database
+    """
+
+    OpenLRW.pretty_message('Initializing', 'Updating the mongoUser collection')
+
+    # First, we get all the users from the database
+    users = json.loads(OpenLrw.get_users(jwt))
+    db_users = []
+
+    # Create an array of uids
+    for user in users:
+        uid = user['user']['sourcedId']
+        db_users.append(uid)
+
+    ldap_users = {}
+    temp = []
+    counter = 0
+    controls = create_ldap_controls(SETTINGS['ldap']['page_size'])
+
+    while 1:
+        try:
+            # Adjusting the scope such as SUBTREE can reduce the performance if you don't need it
+            users = l.search_ext(BASEDN, ldap.SCOPE_ONELEVEL, FILTER, ATTRLIST, serverctrls=[controls])
+        except ldap.LDAPError as e:
+            OpenLRW.pretty_error('LDAP search failed', '%s' % e)
+
+        try:
+            rtype, rdata, ruser, server_ctrls = l.result3(users)  # Pull the results from the search request
+        except ldap.LDAPError as e:
+            OpenLRW.pretty_error('Couldn\'t pull LDAP results', '%s' % e)
+
+        # treat the tuples gotten
+        for dn, attributes in rdata:
+            sourcedId = attributes['uid'][0]
+            givenName = attributes['displayName'][0]
+            temp.append(sourcedId)
+            ldap_users[sourcedId] = givenName
+
+        # Get cookie for next request
+        pctrls = get_ldap_controls(server_ctrls)
+        if not pctrls:
+            print(sys.stderr, 'Warning: Server ignores RFC 2696 control.')
+            break
+
+        cookie = set_ldap_cookie(controls, pctrls, SETTINGS['ldap']['page_size'])
+        if not cookie:
+            break
+    l.unbind()
+
+    # Get the difference of old/new users
+    new_users = diff(temp, db_users)
+
+    # Send the users
+    for user in new_users:
+        data = {
+            'status': 'inactive',
+            'sourcedId': user,
+            'givenName': ldap_users[user],
+            'metadata': {}
+        }
+
+        try:
+            OpenLrw.post_user(data, jwt, False)
+        except ExpiredTokenException:
+            jwt = OpenLrw.generate_jwt()
+            OpenLrw.post_user(data, jwt, False)
+        counter = counter + 1
+
+    return counter
 
 
 # -------------- MAIN --------------
@@ -98,9 +181,9 @@ except ldap.LDAPError as e:
 
 jwt = OpenLrw.generate_jwt()
 
-if option.reset is True:  # Deletes evey users and inserts them
+if option.reset is True:  # Delete evey users and insert them
     users = OpenLrw.get_users(jwt)
-    if users:  # It shouldn't expire but it's better to check
+    if users:
         data = json.loads(users)
         for row in data:
             try:
@@ -110,15 +193,18 @@ if option.reset is True:  # Deletes evey users and inserts them
                 OpenLrw.delete_user(row['user']['sourcedId'], jwt)
     else:
         OpenLRW.pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
-    populate(False, jwt)
+
+    COUNTER = populate(False, jwt)
 elif option.update is True:
-    populate(True, jwt)
+    COUNTER = add_new_users_only(jwt)
+elif option.forceupdate is True:
+    COUNTER = populate(True, jwt)
 else:
     OpenLRW.pretty_error("Wrong usage", "Run --help for more information")
 
 OpenLRW.pretty_message("Script finished", "Total number of users imported : " + str(COUNTER))
 
-message = str("LDAP Users imported (" + str(sys.argv[1]) + " method) in " + measure_time() + " seconds")
+message = str("LDAP Users imported (" + str(sys.argv[1]) + " method) in " + measure_time() + " seconds \n \n Total number of users imported : " + str(COUNTER))
 
 OpenLrw.mail_server(str(sys.argv[0]) + " summary", message)
 logging.info(message)
