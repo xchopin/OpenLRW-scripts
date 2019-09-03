@@ -20,7 +20,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%
 parser = OpenLRW.parser
 parser.add_argument('-r', '--reset', action='store_true', help='Clear the User collection and re-import all the users.')
 parser.add_argument('-u', '--update', action='store_true', help='Add new LDAP users to the User collection')
-parser.add_argument('-fu', '--force-update', action='store_true', help='Reset the data for each user + import the new users')
+parser.add_argument('--restore', action='store_true', help='Reset the data for each user + import the new users')
 option = OpenLRW.enable_argparse()
 
 # -------------- GLOBAL --------------
@@ -197,7 +197,7 @@ if option.reset is True:  # Delete evey users and insert them
     COUNTER = populate(False, jwt)
 elif option.update is True:
     COUNTER = add_new_users_only(jwt)
-elif option.forceupdate is True:
+elif option.restore is True:
     COUNTER = populate(True, jwt)
 else:
     OpenLRW.pretty_error("Wrong usage", "Run --help for more information")
