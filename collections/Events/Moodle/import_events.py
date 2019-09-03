@@ -183,14 +183,16 @@ elif args['update'] is not None:
     jwt = OpenLrw.generate_jwt()
     last_event = json.loads(OpenLrw.http_auth_get('/api/events/sources/moodle?page=0&limit=1', jwt))
     if last_event is not None:
-    	last_event = last_event[0]
+        last_event = last_event[0]
         date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.755Z')
         timestamp = (date - datetime.datetime(1970,1,1)).total_seconds()
         sql_where = "WHERE timecreated >= " + str(timestamp)
-
     else:
         OpenLrw.pretty_error("NO MOODLE EVENTS", "MongoDB does not have any moodle events, please use timestamps argument instead")
         exit()
+else:
+    OpenLrw.pretty_error("Wrong usage", "This script requires an argument, use --help for more information")
+    exit()
 
 
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
