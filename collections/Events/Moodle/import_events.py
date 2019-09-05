@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -31,8 +31,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%
 
 
 parser = OpenLRW.parser
-parser.add_argument('-t', '--timestamps', action='store', help='Two timestamps (From and To) for querying Moodle`s database')
-parser.add_argument('-u', '--update', action='store_true', help='Import the events with a greater timestamp than the last event stored in the database.')
+parser.add_argument('-t', '--timestamps', action='store', help='Two timestamps(from & to) for querying Moodle`s database')
+parser.add_argument('-u', '--update', action='store_true', help='Import newer events than the last one stored in mongo.')
 args = vars(OpenLRW.enable_argparse())
 
 
@@ -173,26 +173,30 @@ COUNTER_JSON_SENT = 0
 TOTAL_EVENT = 0
 
 
+if (args['timestamps'] is None) and (args['update'] is False):
+    OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
+    exit()
+
+
 if args['timestamps'] is not None:
     args = args['timestamps']
     if re.match(TIMESTAMP_REGEX, args[0]) and re.match(TIMESTAMP_REGEX, args[1]):
         sql_where = "WHERE timecreated >= " + args[0]+ " AND timecreated <= " + args[1]
     else:
         OpenLrw.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
-elif args['update'] is not None:
+elif args['update'] is True:
     jwt = OpenLrw.generate_jwt()
-    last_event = json.loads(OpenLrw.http_auth_get('/api/events/sources/moodle?page=0&limit=1', jwt))
-    if last_event is not None:
-        last_event = last_event[0]
-        date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.755Z')
-        timestamp = (date - datetime.datetime(1970,1,1)).total_seconds()
-        sql_where = "WHERE timecreated >= " + str(timestamp)
-    else:
-        OpenLrw.pretty_error("NO MOODLE EVENTS", "MongoDB does not have any moodle events, please use timestamps argument instead")
+    last_event = OpenLrw.http_auth_get('/api/events/sources/moodle?page=0&limit=1', jwt)
+
+    if last_event is None:
+        OpenLrw.pretty_error("NO MOODLE EVENTS", "There is no Moodle events, please use timestamps argument instead")
+        OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either there is no Moodle events.")
         exit()
-else:
-    OpenLrw.pretty_error("Wrong usage", "This script requires an argument, use --help for more information")
-    exit()
+
+    last_event = json.loads(last_event)[0]
+    date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.755Z')
+    timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
+    sql_where = "WHERE timecreated > " + str(timestamp)
 
 
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
