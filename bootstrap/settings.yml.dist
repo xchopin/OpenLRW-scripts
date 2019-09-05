@@ -16,13 +16,6 @@ email:
   from: "scripts@openlrw.dev"
   to: "scripts@openlrw.dev"
 
-db_moodle_log:
-  host: ""
-  name: ""
-  username: ""
-  password: ""
-  log_table: ""
-
 db_moodle:
   host: ""
   name: ""
