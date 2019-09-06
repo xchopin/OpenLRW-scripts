@@ -34,8 +34,6 @@ All these scripts are made for the Educational community, don't hesitate to cont
 
 
 
-
-
 ## III. Get started
 ### 1. Clone the repository
 ```
@@ -105,10 +103,10 @@ $ python collections/Users/LDAP/import_users.py --reset
 ```
 
 - ##### Update the collection
-> Add the new users to the collection (slower: checks duplicates)
+> Add the new users to the collection
 
 ```
-$ python collections/Users/LDAP/import_users.py --update
+$ python collections/Users/LDAP/import_users.py -u
 ```
 
 <br>
@@ -181,12 +179,12 @@ $ sh authentications.sh
  $ python collections/Events/Moodle/import_events.py -t TIMESTAMP TIMESTAMP
  ``` 
  
-- ##### Import the events from the 24 last hours
+- ##### Update the events
 
-> It queries a temporary table that contains the events oF the 24 last hours.
+> Check the most recent event stored in the database and insert the newer ones
 
 ```
-$ python collections/Events/Moodle/import_last_events.py
+ $ python collections/Events/Moodle/import_events.py -u
 ```
   
   
@@ -344,6 +342,11 @@ This script imports the enrollments from Moodle with a timestamp argument (from)
 > Import the Enrollments
 ```bash
 $ python collections/Enrollments/Moodle/import_enrollments.py --from TIMESTAMP
+```  
+
+> Update the Enrollments
+```bash
+$ python collections/Enrollments/Moodle/import_enrollments.py -u
 ```  
 
 #### - Clear the collection

@@ -88,7 +88,7 @@ query.execute("SELECT assignment.id, user.username, context.instanceid, assignme
               "FROM mdl_role_assignments as assignment, mdl_context as context, mdl_user as user "
               "WHERE context.id = assignment.contextid "
               "AND user.id = assignment.userid AND (assignment.roleid = 3 OR assignment.roleid = 4 OR assignment.roleid = 5)"
-              "AND assignment.timemodified " + sql_where
+              "AND assignment.timemodified " + sql_where)
 
 enrollments = query.fetchall()
 
