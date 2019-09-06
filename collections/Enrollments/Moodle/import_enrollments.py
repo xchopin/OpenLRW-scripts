@@ -79,7 +79,7 @@ elif args['update'] is True:
         OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either, there is no enrollments")
         exit()
     last_enrollment = json.loads(last_enrollment)[0]
-    date = datetime.datetime.strptime(last_enrollment['beginDate'], '%Y-%m-%dT%H:%M:%SZ')
+    date = datetime.datetime.strptime(last_enrollment['beginDate'], '%Y-%m-%dT%H:%M:%S.%fZ')
     query_timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
     sql_where = "> " + str(query_timestamp)
 
@@ -104,7 +104,7 @@ for enrollment in enrollments:
         'user': {
             'sourcedId': username,
         },
-        'beginDate': timestamp,
+        'beginDate': str(datetime.datetime.utcfromtimestamp(timestamp).isoformat()) + '.755Z',
         'primary': True,
         'status': 'active'
     }

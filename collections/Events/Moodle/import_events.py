@@ -152,10 +152,10 @@ def create_caliper_json(user_id, action, object_id, object_type, object_name, de
                     "@id":  str(group_id),
                     "@type": str(group_type)
                 },
-                "eventTime": datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%dT%H:%M:%S.755Z')
+                "eventTime": str(datetime.datetime.utcfromtimestamp(timestamp).isoformat()) + '.755Z'
             }
         ],
-        "sendTime": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.755Z'),
+        "sendTime": str(datetime.datetime.now().utcfromtimestamp(timestamp).isoformat()) + '.755Z',
         "sensor": str(sys.argv[0])
     }
 
@@ -194,7 +194,7 @@ elif args['update'] is True:
         exit()
 
     last_event = json.loads(last_event)[0]
-    date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.755Z')
+    date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.%fZ')
     timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
     sql_where = "WHERE timecreated > " + str(timestamp)
 
