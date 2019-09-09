@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -36,12 +36,43 @@ def exit_log(lineitem_id, reason):
     :param lineitem_id:
     :param reason:
     """
-
     message = "Error Moodle line item \n\n An error occured when sending the line item " + str(lineitem_id) + "\n\n Details: \n" + str(reason)
     OpenLrw.mail_server(" Error Moodle line item", message)
     logging.error(message)
     OpenLrw.pretty_error("Error on POST", "Cannot send the line item object " + str(lineitem_id))
     sys.exit(0)
+
+
+def generate_json(sourced_id, title, description, assign_date, due_date, class_sourced_id, category, result_value_max):
+    """
+    Generate a JSON formatted value ready to be sent to OpenLRW
+    :param sourced_id:
+    :param title:
+    :param description:
+    :param assign_date:
+    :param due_date:
+    :param class_sourced_id:
+    :param category:
+    :param result_value_max:
+    :return:
+    """
+    if result_value_max is None:
+        result_value_max = 0.0
+
+    return {
+        "sourcedId": sourced_id,
+        "title": title,
+        "description": description,
+        "assignDate": assign_date,
+        "dueDate": due_date,
+        "resultValueMax": result_value_max,
+        "class": {
+            "sourcedId": class_sourced_id
+        },
+        "metadata": {
+            "type": category
+        }
+    }
 
 
 # -------------- DATABASES --------------
@@ -56,26 +87,15 @@ JWT = OpenLrw.generate_jwt()
 
 for line_item in line_items:
     quiz_id, class_id, name, description, open_date, close_date = line_item
-    open_date = datetime.datetime.fromtimestamp(open_date).strftime('%Y-%m-%dT%H:%M:%S.755Z') if open_date > 0 else None
-    close_date = datetime.datetime.fromtimestamp(close_date).strftime('%Y-%m-%dT%H:%M:%S.755Z') if close_date > 0 else None
-
-    json = {
-        "sourcedId": "quiz_" + str(quiz_id),
-        "title": name,
-        "description": description,
-        "assignDate": open_date,
-        "dueDate": close_date,
-        "class": {
-            "type": "quiz",
-            "sourcedId": str(class_id)
-        }
-    }
+    open_date = str(datetime.datetime.now().utcfromtimestamp(open_date).isoformat()) + '.755Z' if open_date > 0 else None
+    close_date = str(datetime.datetime.now().utcfromtimestamp(close_date).isoformat()) + '.755Z' if close_date > 0 else None
+    data = generate_json("quiz_" + str(quiz_id), name, description, open_date, close_date, str(class_id), "quiz", None)
 
     try:
-        res = OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
+        res = OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
+        OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, True)
     except BadRequestException as e:
         exit_log(quiz_id, e.message.content)
     except InternalServerErrorException:
@@ -95,24 +115,13 @@ line_items = query.fetchall()
 
 for line_item in line_items:
     quiz_id, class_id, name, description, scale = line_item
-    json = {
-        "sourcedId": "active_quiz_" + str(quiz_id),
-        "title": name,
-        "description": description,
-        "class": {
-            "sourcedId": class_id
-        },
-        "metadata": {
-            "type": "activequiz",
-            "resultValueMax": str(scale)
-        }
-    }
+    data = generate_json("active_quiz_" + str(quiz_id), name, description, None, None, class_id, "activequiz", str(scale))
 
     try:
-        OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
+        OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_lineitem_for_a_class(class_id, json, JWT, True)
+        OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, True)
     except BadRequestException as e:
         exit_log(quiz_id, e.message.content)
     except InternalServerErrorException:
