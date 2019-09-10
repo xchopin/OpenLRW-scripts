@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -23,10 +23,10 @@ from bootstrap.helpers import *
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_results.log', level=logging.INFO)
 
 parser = OpenLRW.parser
-parser.add_argument('-f', '--from', required='True', action='store', help='"From" timestamp for querying Moodle`s database')
-parser.add_argument('-t', '--to', action='store', help='"To" timestamp for querying Moodle`s database')
+parser.add_argument('-f', '--from', action='store', help='"From" timestamp for querying Moodle`s database')
+parser.add_argument('-t', '--to', action='store', help='"To" timestamp for querying Moodle`s database (must be used with --from flag)')
+parser.add_argument('-u', '--update', action='store_true', help='Import newer results than the last one stored in mongo')
 args = vars(OpenLRW.enable_argparse())
-
 
 
 # -------------- GLOBAL --------------
@@ -68,7 +68,7 @@ def insert_quizzes(query, sql_where):
         student_id, result_id, lineitem_id, score, date, class_id = result
 
         if date > 0:
-            date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S.755Z')
+            date = str(datetime.datetime.now().utcfromtimestamp(date).isoformat()) + '.755Z',
         else:
             date = ""
 
@@ -120,7 +120,7 @@ def insert_active_quizzes(query, sql_where):
         student_id, result_id, lineitem_id, score, feedback, date, class_id = result
 
         if date > 0:
-            date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S.755Z')
+            date = str(datetime.datetime.now().utcfromtimestamp(date).isoformat()) + '.755Z',
         else:
             date = ""
 
@@ -269,16 +269,32 @@ def insert_grades(query, sql_where):
 # -------------- MAIN --------------
 sql_where = ""
 
-if args['to'] is None:
+if (args['from'] is None) and (args['update'] is False):
+    OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
+    exit()
+
+
+if args['from'] is not None and args['to'] is None:  # only from
     if re.match(TIMESTAMP_REGEX, args['from']):
         sql_where = "AND grades.timemodified >= " + args['from']
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM)"])
-else:
+elif args['from'] is not None and args['to'] is not None:  # from and to
     if re.match(TIMESTAMP_REGEX, args['from']) and re.match(TIMESTAMP_REGEX, args['to']):
         sql_where = "AND grades.timemodified >= " + args['from'] + " AND grades.timemodified <= " + args['to']
     else:
         OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+elif args['update'] is True:
+    jwt = OpenLrw.generate_jwt()
+    last_result = OpenLrw.http_auth_get('/api/results?page=0&limit=1', jwt)
+    if last_result is None:
+        OpenLrw.pretty_error("Error", "There is no result")
+        OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either, there is no result")
+        exit()
+    last_result = json.loads(last_result)[0]
+    date = datetime.datetime.strptime(last_result['date'], '%Y-%m-%dT%H:%M:%S.%fZ')
+    query_timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
+    sql_where = "AND grades.timemodified > " + str(query_timestamp)
 
 
 OpenLrw.pretty_message("Caution", "For a better performance, make sure MongoDB indices are created.")
