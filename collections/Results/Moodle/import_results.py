@@ -189,7 +189,6 @@ def insert_grades(query, sql_where):
 
     for result in results:
         student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id = result
-        print date
 
         if date > 0:
             date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
@@ -232,39 +231,44 @@ def insert_grades(query, sql_where):
         res = False  # First we check if the lineItem already exists in the database
         item_id = 'grade_item_' + str(lineitem_id)
         for i in range(0, len(line_items)):
-            if line_items[i]['lineItem']['sourcedId'] == item_id:
-                res = True
-                break
-
-        if not res:
-
-            item = {
-                "sourcedId": item_id,
-                "title": item_name,
-                "description": "",
-                "assignDate": "",
-                "dueDate": "",
-                "resultValueMax": 0.0,
-                "class": {
-                    "sourcedId": class_id
-                },
-                "metadata": {
-                    "type": "grade"
-                }
-            }
-
             try:
-                OpenLrw.post_lineitem(item, JWT, False)
-            except ExpiredTokenException:
-                JWT = OpenLrw.generate_jwt()
-                OpenLrw.post_lineitem(item, JWT, False)
-            except InternalServerErrorException as e:
-                exit_log('Unable to create the LineItem ' + item_id, e.message.content)
-            except requests.exceptions.ConnectionError as e:
-                exit_log('Unable to create the LineItem ' + item_id, e)
+                if line_items[i]['lineItem']['sourcedId'] == item_id:
+                    res = True
+                    break
+            except Exception as e:
+                print(line_items[i])
+                print(e.message.content)
+                exit()
 
-            # Add new line item to the dynamic array
-            line_items.append(item)
+    if not res:
+
+        item = {
+            "sourcedId": item_id,
+            "title": item_name,
+            "description": "",
+            "assignDate": "",
+            "dueDate": "",
+            "resultValueMax": 0.0,
+            "class": {
+                "sourcedId": class_id
+            },
+            "metadata": {
+                "type": "grade"
+            }
+        }
+
+        try:
+            OpenLrw.post_lineitem(item, JWT, False)
+        except ExpiredTokenException:
+            JWT = OpenLrw.generate_jwt()
+            OpenLrw.post_lineitem(item, JWT, False)
+        except InternalServerErrorException as e:
+            exit_log('Unable to create the LineItem ' + item_id, e.message.content)
+        except requests.exceptions.ConnectionError as e:
+            exit_log('Unable to create the LineItem ' + item_id, e)
+
+        # Add new line item to the dynamic array
+        line_items.append(item)
 
     return len(results)
 
@@ -308,11 +312,11 @@ query = db.cursor()
 
 print("Executing...")
 
-quiz = insert_quizzes(query, sql_where)
-active_quiz = insert_active_quizzes(query, sql_where)
+#quiz = insert_quizzes(query, sql_where)
+#active_quiz = insert_active_quizzes(query, sql_where)
 items = insert_grades(query, sql_where)
 
-COUNTER = quiz + active_quiz + items
+COUNTER = 0 # quiz + active_quiz + items
 
 db.close()
 
