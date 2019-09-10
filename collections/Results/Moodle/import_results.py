@@ -190,7 +190,7 @@ def insert_grades(query, sql_where):
         student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id = result
 
         if date > 0:
-            date = datetime.datetime.fromtimestamp(date).strftime('%Y-%m-%dT%H:%M:%S.755Z')
+            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z',
         else:
             date = ""
 
