@@ -29,6 +29,7 @@ parser.add_argument('-u', '--update', action='store_true', help='Import newer re
 args = vars(OpenLRW.enable_argparse())
 
 
+
 # -------------- GLOBAL --------------
 DB_HOST = SETTINGS['db_moodle']['host']
 DB_NAME = SETTINGS['db_moodle']['name']
@@ -89,10 +90,10 @@ def insert_quizzes(query, sql_where):
         }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except BadRequestException as e:
             print("Error " + str(e.message.content))
             OpenLrw.mail_server("Error import_results.py", str(e.message.content))
@@ -120,7 +121,7 @@ def insert_active_quizzes(query, sql_where):
         student_id, result_id, lineitem_id, score, feedback, date, class_id = result
 
         if date > 0:
-            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z',
+            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
         else:
             date = ""
 
@@ -159,10 +160,10 @@ def insert_active_quizzes(query, sql_where):
             }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
         except BadRequestException as e:
             exit_log(result_id, str(e.message.content))
         except InternalServerErrorException as e:
@@ -188,9 +189,10 @@ def insert_grades(query, sql_where):
 
     for result in results:
         student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id = result
+        print date
 
         if date > 0:
-            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z',
+            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
         else:
             date = ""
 
@@ -214,10 +216,10 @@ def insert_grades(query, sql_where):
         }
 
         try:
-            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, False)
         except ExpiredTokenException:
             JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, True)
+            OpenLrw.post_result_for_a_class(class_id, res_object, JWT, False)
         except BadRequestException as e:
             exit_log(result_id, str(e.message.content))
         except InternalServerErrorException as e:
@@ -235,24 +237,27 @@ def insert_grades(query, sql_where):
                 break
 
         if not res:
+
             item = {
                 "sourcedId": item_id,
                 "title": item_name,
+                "description": "",
                 "assignDate": "",
                 "dueDate": "",
+                "resultValueMax": 0.0,
                 "class": {
                     "sourcedId": class_id
                 },
-                "lineItem": {
-                    "sourcedId": item_id
+                "metadata": {
+                    "type": "grade"
                 }
             }
 
             try:
-                OpenLrw.post_lineitem(item, JWT, True)
+                OpenLrw.post_lineitem(item, JWT, False)
             except ExpiredTokenException:
                 JWT = OpenLrw.generate_jwt()
-                OpenLrw.post_lineitem(item, JWT, True)
+                OpenLrw.post_lineitem(item, JWT, False)
             except InternalServerErrorException as e:
                 exit_log('Unable to create the LineItem ' + item_id, e.message.content)
             except requests.exceptions.ConnectionError as e:
