@@ -312,11 +312,11 @@ query = db.cursor()
 
 print("Executing...")
 
-#quiz = insert_quizzes(query, sql_where)
-#active_quiz = insert_active_quizzes(query, sql_where)
+quiz = insert_quizzes(query, sql_where)
+active_quiz = insert_active_quizzes(query, sql_where)
 items = insert_grades(query, sql_where)
 
-COUNTER = 0 # quiz + active_quiz + items
+COUNTER = quiz + active_quiz + items
 
 db.close()
 
