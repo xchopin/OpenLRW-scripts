@@ -128,6 +128,7 @@ def insert_grades(query, sql_where):
                 "description": "",
                 "assignDate": "",
                 "dueDate": "",
+                "resultValueMin": str(min_value),
                 "resultValueMax": str(max_value),
                 "class": {
                     "sourcedId": class_id
