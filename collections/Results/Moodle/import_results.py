@@ -55,128 +55,9 @@ def exit_log(result_id, reason):
     sys.exit(0)
 
 
-def insert_quizzes(query, sql_where):
-    # Query to get quizzes
-    query.execute("SELECT username, grades.id, grades.quiz, grades.grade, grades.timemodified, quiz.course"
-                  " FROM mdl_user as users, mdl_quiz_grades as grades, mdl_quiz as quiz"
-                  " WHERE grades.quiz = quiz.id AND users.id = grades.userid " + sql_where)
-
-    results = query.fetchall()
-
-    JWT = OpenLrw.generate_jwt()
-
-    for result in results:
-        student_id, result_id, lineitem_id, score, date, class_id = result
-
-        if date > 0:
-            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
-        else:
-            date = ""
-
-        result = {
-            'sourcedId': result_id,
-            'score': str(score),
-            'date': date,
-            'student': {
-                'sourcedId': student_id
-            },
-            'lineitem': {
-                'sourcedId': 'quiz_' + str(lineitem_id)
-            },
-            'metadata': {
-                'category': 'Moodle',
-                'type': 'quiz'
-            }
-        }
-
-        try:
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
-        except ExpiredTokenException:
-            JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
-        except BadRequestException as e:
-            print("Error " + str(e.message.content))
-            OpenLrw.mail_server("Error import_results.py", str(e.message.content))
-        except InternalServerErrorException as e:
-            exit_log(result_id, str(e.message.content))
-        except requests.exceptions.ConnectionError as e:
-            exit_log(result_id, e)
-
-    return len(results)
-
-
-def insert_active_quizzes(query, sql_where):
-    # Query to get active quizzes
-    query.execute(
-        "SELECT username, grades.id, activequiz.id, grades.finalgrade, grades.feedback, grades.timemodified, activequiz.course"
-        " FROM mdl_user as users, mdl_activequiz as activequiz, mdl_grade_grades as grades, mdl_grade_items as items"
-        " WHERE grades.itemid = items.id AND items.courseid = activequiz.course " + sql_where +
-        " AND users.id = grades.userid AND grades.finalgrade is NOT NULL")
-
-    results = query.fetchall()
-
-    JWT = OpenLrw.generate_jwt()
-
-    for result in results:
-        student_id, result_id, lineitem_id, score, feedback, date, class_id = result
-
-        if date > 0:
-            date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
-        else:
-            date = ""
-
-        if feedback is None:
-            result = {
-                'sourcedId': result_id,
-                'score': str(score),
-                'date': date,
-                'student': {
-                    'sourcedId': student_id
-                },
-                'lineitem': {
-                    'sourcedId': 'active_quiz_' + str(lineitem_id)
-                },
-                'metadata': {
-                    'category': 'Moodle',
-                    'type': 'active_quiz'
-                }
-            }
-        else:
-            result = {
-                'sourcedId': result_id,
-                'score': str(score),
-                'date': date,
-                'student': {
-                    'sourcedId': student_id
-                },
-                'lineitem': {
-                    'sourcedId': 'active_quiz_' + str(lineitem_id)
-                },
-                'metadata': {
-                    'category': 'Moodle',
-                    'type': 'active_quiz',
-                    'feedback': feedback
-                }
-            }
-
-        try:
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
-        except ExpiredTokenException:
-            JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_result_for_a_class(class_id, result, JWT, False)
-        except BadRequestException as e:
-            exit_log(result_id, str(e.message.content))
-        except InternalServerErrorException as e:
-            exit_log(result_id, str(e.message.content))
-        except requests.exceptions.ConnectionError as e:
-            exit_log(result_id, e)
-
-    return len(results)
-
-
 def insert_grades(query, sql_where):
     query.execute(
-        "SELECT users.username, grades.timemodified, grades.id, grades.finalgrade, grades.itemid,items.itemname, items.grademax, items.grademin, items.courseid"
+        "SELECT users.username, grades.timemodified, grades.id, grades.finalgrade, grades.itemid,items.itemname, items.grademax, items.grademin, items.courseid, items.itemmodule "
         " FROM mdl_grade_grades as grades, mdl_user as users, mdl_grade_items as items"
         " WHERE users.id = grades.userid " + sql_where +
         " AND items.id = grades.itemid"
@@ -188,7 +69,7 @@ def insert_grades(query, sql_where):
     line_items = json.loads(OpenLrw.get_lineitems(JWT))
 
     for result in results:
-        student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id = result
+        student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id, item_module = result
 
         if date > 0:
             date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
@@ -208,7 +89,7 @@ def insert_grades(query, sql_where):
             },
             'metadata': {
                 'category': 'Moodle',
-                'type': 'grade_result',
+                'type': item_module,
                 'resultValueMin': str(min_value),
                 'resultValueMax': str(max_value)
             }
@@ -229,46 +110,46 @@ def insert_grades(query, sql_where):
         # Creation of Line Items
 
         res = False  # First we check if the lineItem already exists in the database
-        item_id = 'grade_item_' + str(lineitem_id)
+        item_id = 'moodle_' + str(lineitem_id)
         for i in range(0, len(line_items)):
             try:
                 if line_items[i]['lineItem']['sourcedId'] == item_id:
                     res = True
                     break
             except Exception as e:
-                print(line_items[i])
-                print(e.message.content)
-                exit()
+                if line_items[i]['sourcedId'] == item_id:
+                    res = True
+                    break
 
-    if not res:
 
-        item = {
-            "sourcedId": item_id,
-            "title": item_name,
-            "description": "",
-            "assignDate": "",
-            "dueDate": "",
-            "resultValueMax": 0.0,
-            "class": {
-                "sourcedId": class_id
-            },
-            "metadata": {
-                "type": "grade"
+        if not res:
+            item = {
+                "sourcedId": item_id,
+                "title": item_name,
+                "description": "",
+                "assignDate": "",
+                "dueDate": "",
+                "resultValueMax": str(max_value),
+                "class": {
+                    "sourcedId": class_id
+                },
+                "metadata": {
+                    "type": "Moodle " + item_module
+                }
             }
-        }
 
-        try:
-            OpenLrw.post_lineitem(item, JWT, False)
-        except ExpiredTokenException:
-            JWT = OpenLrw.generate_jwt()
-            OpenLrw.post_lineitem(item, JWT, False)
-        except InternalServerErrorException as e:
-            exit_log('Unable to create the LineItem ' + item_id, e.message.content)
-        except requests.exceptions.ConnectionError as e:
-            exit_log('Unable to create the LineItem ' + item_id, e)
+            try:
+                OpenLrw.post_lineitem(item, JWT, False)
+            except ExpiredTokenException:
+                JWT = OpenLrw.generate_jwt()
+                OpenLrw.post_lineitem(item, JWT, False)
+            except InternalServerErrorException as e:
+                exit_log('Unable to create the LineItem ' + item_id, e.message.content)
+            except requests.exceptions.ConnectionError as e:
+                exit_log('Unable to create the LineItem ' + item_id, e)
 
-        # Add new line item to the dynamic array
-        line_items.append(item)
+            # Add new line item to the dynamic array
+            line_items.append(item)
 
     return len(results)
 
@@ -310,13 +191,8 @@ time.sleep(0.7)
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
 
-print("Executing...")
 
-quiz = insert_quizzes(query, sql_where)
-active_quiz = insert_active_quizzes(query, sql_where)
-items = insert_grades(query, sql_where)
-
-COUNTER = quiz + active_quiz + items
+COUNTER = insert_grades(query, sql_where)
 
 db.close()
 
