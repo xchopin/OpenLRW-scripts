@@ -121,7 +121,6 @@ def insert_grades(query, sql_where):
                     res = True
                     break
 
-
         if not res:
             item = {
                 "sourcedId": item_id,
@@ -132,9 +131,6 @@ def insert_grades(query, sql_where):
                 "resultValueMax": str(max_value),
                 "class": {
                     "sourcedId": class_id
-                },
-                "metadata": {
-                    "type": "Moodle " + item_module
                 }
             }
 
@@ -184,9 +180,6 @@ elif args['update'] is True:
     query_timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
     sql_where = "AND grades.timemodified > " + str(query_timestamp)
 
-
-OpenLrw.pretty_message("Caution", "For a better performance, make sure MongoDB indices are created.")
-time.sleep(0.7)
 
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
