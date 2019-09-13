@@ -85,7 +85,7 @@ def insert_grades(query, sql_where):
                 'sourcedId': student_id
             },
             'lineitem': {
-                'sourcedId': 'grade_item_' + str(lineitem_id)
+                'sourcedId': str(lineitem_id)
             },
             'metadata': {
                 'category': 'Moodle',
