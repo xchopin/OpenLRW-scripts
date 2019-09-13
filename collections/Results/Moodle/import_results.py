@@ -110,7 +110,7 @@ def insert_grades(query, sql_where):
         # Creation of Line Items
 
         res = False  # First we check if the lineItem already exists in the database
-        item_id = 'moodle_' + str(lineitem_id)
+        item_id = lineitem_id
         for i in range(0, len(line_items)):
             try:
                 if line_items[i]['lineItem']['sourcedId'] == item_id:
