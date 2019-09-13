@@ -106,7 +106,7 @@ $ python collections/Users/LDAP/import_users.py --reset
 > Add the new users to the collection
 
 ```
-$ python collections/Users/LDAP/import_users.py -u
+$ python collections/Users/LDAP/import_users.py --update
 ```
 
 <br>
@@ -240,11 +240,7 @@ $ python collections/Classes/delete_all_classes.py
  
 This script imports the `Quizzes`, `Active quizzes` and the `Grades` from the Moodle database. Checking method is used for HTTP Post so you can use the script for populating and updating your collection.
  
-##### Import all the results
-```bash
-$ python collections/Results/Moodle/import_results.py
-```  
-
+ 
 ##### Import all the results from a timestamp
 > The condition is made on Moodle's timemodified attribute
 
@@ -257,6 +253,11 @@ $ python collections/Results/Moodle/import_results.py --from TIMESTAMP
 
 ```bash
 $ python collections/Results/Moodle/import_results.py --from TIMESTAMP --to TIMESTAMP
+```  
+##### Update the results
+> Import only the results that are older to the last result in MongoDB
+```bash
+$ python collections/Results/Moodle/import_results.py -u
 ```  
 
 #### - Apogée
