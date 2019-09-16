@@ -55,6 +55,21 @@ def exit_log(result_id, reason):
     sys.exit(0)
 
 
+
+def get_mongo_lineitems():
+    JWT = OpenLrw.generate_jwt()
+    mongo_lineitems = OpenLrw.get_lineitems(JWT)
+
+    if mongo_lineitems is None:
+        return {}
+    else:
+        mongo_lineitems = json.loads(mongo_lineitems)
+        res = {}
+        for item in mongo_lineitems:
+            res[item['lineItem']['sourcedId']] = True
+        return res
+
+
 def insert_grades(query, sql_where):
     query.execute(
         "SELECT users.username, grades.timemodified, grades.id, grades.finalgrade, grades.itemid,items.itemname, items.grademax, items.grademin, items.courseid, items.itemmodule "
@@ -66,8 +81,8 @@ def insert_grades(query, sql_where):
 
     results = query.fetchall()
     JWT = OpenLrw.generate_jwt()
-    line_items = json.loads(OpenLrw.get_lineitems(JWT))
 
+    mongo_lineitems = get_mongo_lineitems()
     for result in results:
         student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id, item_module = result
 
@@ -111,22 +126,21 @@ def insert_grades(query, sql_where):
 
         res = False  # First we check if the lineItem already exists in the database
         item_id = lineitem_id
-        for i in range(0, len(line_items)):
-            try:
-                if line_items[i]['lineItem']['sourcedId'] == item_id:
-                    res = True
-                    break
-            except Exception as e:
-                if line_items[i]['sourcedId'] == item_id:
-                    res = True
-                    break
+
+
+        # Check if LineItem already exists
+        try:
+            if mongo_lineitems[item_id]:
+                break
+        except KeyError:
+            exist = False
 
         if not res:
             item = {
                 "sourcedId": item_id,
                 "title": item_name,
                 "description": "",
-                "assignDate": "",
+                "assignDate": date,
                 "dueDate": "",
                 "resultValueMin": str(min_value),
                 "resultValueMax": str(max_value),

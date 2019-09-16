@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -133,6 +133,52 @@ def import_module(module, cursor, mongo_lineitems):
     return counter
 
 
+def import_other_module(cursor, mongolineitems):
+    counter = 0
+    cursor.execute("SELECT grades.itemid, items.courseid, items.itemname, items.timemodified "
+                   "FROM mdl_grade_grades as grades, mdl_user as users, mdl_grade_items as items "
+                   "WHERE users.id = grades.userid "
+                   "AND items.id = grades.itemid "
+                   "AND finalgrade IS NOT NULL "
+                   "AND itemname IS NOT NULL "
+                   "AND itemmodule IS NULL "
+                   "GROUP BY itemid")
+    line_items = cursor.fetchall()
+    JWT = OpenLrw.generate_jwt()
+
+    for line_item in line_items:
+        exist = False
+        id, class_id, name, date_open = line_item
+        item_id = 'other_' + str(id)
+
+        # Check if LineItem already exists
+        try:
+            if mongo_lineitems[item_id]:
+                break
+        except KeyError:
+            exist = False
+
+        date_open = str(datetime.datetime.now().utcfromtimestamp(date_open).isoformat()) + '.755Z' if date_open > 0 else None
+
+        if exist is False:
+            data = generate_json(item_id, name, "", date_open, None, class_id, "other", None, None)
+            try:
+                OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, False)
+                counter += 1
+            except ExpiredTokenException:
+                JWT = OpenLrw.generate_jwt()
+                OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, False)
+                counter += 1
+            except BadRequestException as e:
+                exit_log(item_id, e.message.content)
+            except InternalServerErrorException:
+                exit_log(item_id, "Internal Server Error 500")
+            except requests.exceptions.ConnectionError as e:
+                exit_log(item_id, e)
+
+    return counter
+
+
 # -------------- MAIN --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 cursor = db.cursor()
@@ -144,6 +190,8 @@ mongo_lineitems = get_mongo_lineitems()
 for module in modules:
     module_name = module[0]
     COUNTER += import_module(str(module_name), cursor, mongo_lineitems)
+
+COUNTER += import_other_module(cursor, mongo_lineitems)
 
 db.close()
 
