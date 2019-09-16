@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -35,14 +35,15 @@ def exit_log(lineitem_id, reason):
     :param lineitem_id:
     :param reason:
     """
-    message = "Error Moodle line item \n\n An error occured when sending the line item " + str(lineitem_id) + "\n\n Details: \n" + str(reason)
+    message = "Error Moodle line item \n\n An error occured when sending the line item " + str(
+        lineitem_id) + "\n\n Details: \n" + str(reason)
     OpenLrw.mail_server(" Error Moodle line item", message)
     logging.error(message)
     OpenLrw.pretty_error("Error on POST", "Cannot send the line item object " + str(lineitem_id))
     sys.exit(0)
 
 
-def generate_json(sourced_id, title, description, assign_date, due_date, class_sourced_id, category, result_value_max):
+def generate_json(sourced_id, title, description, assign_date, due_date, class_sourced_id, category, result_value_max,result_value_min):
     """
     Generate a JSON formatted value ready to be sent to OpenLRW
     :param sourced_id:
@@ -53,10 +54,14 @@ def generate_json(sourced_id, title, description, assign_date, due_date, class_s
     :param class_sourced_id:
     :param category:
     :param result_value_max:
+    :param result_value_min
     :return:
     """
     if result_value_max is None:
         result_value_max = 0.0
+
+    if result_value_min is None:
+        result_value_min = 0.0
 
     return {
         "sourcedId": sourced_id,
@@ -65,6 +70,7 @@ def generate_json(sourced_id, title, description, assign_date, due_date, class_s
         "assignDate": assign_date,
         "dueDate": due_date,
         "resultValueMax": result_value_max,
+        "resultValueMin": result_value_min,
         "class": {
             "sourcedId": class_sourced_id
         },
@@ -81,30 +87,36 @@ def get_mongo_lineitems():
     if mongo_lineitems is None:
         return {}
     else:
-        return json.loads(mongo_lineitems)
+        mongo_lineitems = json.loads(mongo_lineitems)
+        res = {}
+        for item in mongo_lineitems:
+            res[item['lineItem']['sourcedId']] = True
+        return res
 
 
-def import_quiz_lineitems(cursor):
-    cursor.execute("SELECT id, course, name, intro, timeopen, timeclose FROM mdl_quiz")
-    line_items = cursor.fetchall()
+def import_module(module, cursor, mongo_lineitems):
     counter = 0
-    mongo_lineitems = get_mongo_lineitems()
-
+    cursor.execute("SELECT id, course, name, intro, timemodified FROM mdl_" + module + ";")
+    line_items = cursor.fetchall()
     JWT = OpenLrw.generate_jwt()
+
     for line_item in line_items:
-        quiz_id, class_id, name, description, open_date, close_date = line_item
-        open_date = str(datetime.datetime.now().utcfromtimestamp(open_date).isoformat()) + '.755Z' if open_date > 0 else None
-        close_date = str(datetime.datetime.now().utcfromtimestamp(close_date).isoformat()) + '.755Z' if close_date > 0 else None
-
         exist = False
-        item_id = str(quiz_id)
+        id, class_id, name, description, date_open = line_item
+        item_id = module + '_' + str(id)
 
-        for i in range(0, len(mongo_lineitems)):
-                exist = True
+        # Check if LineItem already exists
+        try:
+            if mongo_lineitems[item_id]:
                 break
+        except KeyError:
+            exist = False
+
+        date_open = str(
+            datetime.datetime.now().utcfromtimestamp(date_open).isoformat()) + '.755Z' if date_open > 0 else None
 
         if exist is False:
-            data = generate_json(item_id, name, description, open_date, close_date, str(class_id), "quiz", None)
+            data = generate_json(item_id, name, description, date_open, None, class_id, module, None, None)
             try:
                 OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, False)
                 counter += 1
@@ -113,49 +125,11 @@ def import_quiz_lineitems(cursor):
                 OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, False)
                 counter += 1
             except BadRequestException as e:
-                exit_log(quiz_id, e.message.content)
+                exit_log(item_id, e.message.content)
             except InternalServerErrorException:
-                exit_log(quiz_id, "Internal Server Error 500")
+                exit_log(item_id, "Internal Server Error 500")
             except requests.exceptions.ConnectionError as e:
-                exit_log(quiz_id, e)
-
-    return counter
-
-
-def import_activequiz_lineitems(cursor):
-    cursor.execute("SELECT id, course, name, intro, scale FROM mdl_activequiz")
-    line_items = cursor.fetchall()
-    JWT = OpenLrw.generate_jwt()
-    counter = 0
-    mongo_lineitems = get_mongo_lineitems()
-
-    for line_item in line_items:
-        quiz_id, class_id, name, description, scale = line_item
-
-        exist = False
-        item_id = str(quiz_id)
-
-
-        for i in range(0, len(mongo_lineitems)):
-            if mongo_lineitems[i]['lineItem']['sourcedId'] == item_id:
-                exist = True
-                break
-
-        if exist is False:
-            data = generate_json(str(quiz_id), name, description, None, None, class_id, "activequiz", str(scale))
-            try:
-                res = OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, False)
-                counter += 1
-            except ExpiredTokenException:
-                JWT = OpenLrw.generate_jwt()
-                OpenLrw.post_lineitem_for_a_class(class_id, data, JWT, False)
-                counter += 1
-            except BadRequestException as e:
-                exit_log(quiz_id, e.message.content)
-            except InternalServerErrorException:
-                exit_log(quiz_id, "Internal Server Error 500")
-            except requests.exceptions.ConnectionError as e:
-                exit_log(quiz_id, e)
+                exit_log(item_id, e)
 
     return counter
 
@@ -163,9 +137,14 @@ def import_activequiz_lineitems(cursor):
 # -------------- MAIN --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 cursor = db.cursor()
+cursor.execute("SELECT itemmodule FROM mdl_grade_items where itemmodule != 'null' group by itemmodule;")
+modules = cursor.fetchall()
 
-COUNTER = import_quiz_lineitems(cursor)
-COUNTER += import_activequiz_lineitems(cursor)
+mongo_lineitems = get_mongo_lineitems()
+
+for module in modules:
+    module_name = module[0]
+    COUNTER += import_module(str(module_name), cursor, mongo_lineitems)
 
 db.close()
 
