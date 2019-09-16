@@ -112,8 +112,7 @@ def import_module(module, cursor, mongo_lineitems):
         except KeyError:
             exist = False
 
-        date_open = str(
-            datetime.datetime.now().utcfromtimestamp(date_open).isoformat()) + '.755Z' if date_open > 0 else None
+        date_open = str(datetime.datetime.now().utcfromtimestamp(date_open).isoformat()) + '.755Z' if date_open > 0 else None
 
         if exist is False:
             data = generate_json(item_id, name, description, date_open, None, class_id, module, None, None)
