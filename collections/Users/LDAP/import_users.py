@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -63,9 +63,10 @@ def populate(check, jwt):
         for dn, attributes in rdata:
 
             data = {
-                'status': 'inactive',
+                'status': 'active',
                 'sourcedId': attributes['uid'][0],
                 'givenName': attributes['displayName'][0],
+                'enabledUser': True,
                 'metadata': {}
             }
 
@@ -147,8 +148,9 @@ def add_new_users_only(jwt):
     # Send the users
     for user in new_users:
         data = {
-            'status': 'inactive',
+            'status': 'active',
             'sourcedId': user,
+            'enabledUser': True,
             'givenName': ldap_users[user],
             'metadata': {}
         }
