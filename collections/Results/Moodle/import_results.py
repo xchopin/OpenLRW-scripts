@@ -55,24 +55,10 @@ def exit_log(result_id, reason):
     sys.exit(0)
 
 
-
-def get_mongo_lineitems():
-    JWT = OpenLrw.generate_jwt()
-    mongo_lineitems = OpenLrw.get_lineitems(JWT)
-
-    if mongo_lineitems is None:
-        return {}
-    else:
-        mongo_lineitems = json.loads(mongo_lineitems)
-        res = {}
-        for item in mongo_lineitems:
-            res[item['lineItem']['sourcedId']] = True
-        return res
-
-
 def insert_grades(query, sql_where):
     query.execute(
-        "SELECT users.username, grades.timemodified, grades.id, grades.finalgrade, grades.itemid,items.itemname, items.grademax, items.grademin, items.courseid, items.itemmodule "
+        "SELECT users.username, grades.timemodified, grades.id, grades.finalgrade, grades.itemid,"
+        "items.grademax, items.grademin, items.courseid, items.itemmodule, items.iteminstance "
         " FROM mdl_grade_grades as grades, mdl_user as users, mdl_grade_items as items"
         " WHERE users.id = grades.userid " + sql_where +
         " AND items.id = grades.itemid"
@@ -82,16 +68,22 @@ def insert_grades(query, sql_where):
     results = query.fetchall()
     JWT = OpenLrw.generate_jwt()
 
-    mongo_lineitems = get_mongo_lineitems()
     for result in results:
-        student_id, date, result_id, score, lineitem_id, item_name, max_value, min_value, class_id, item_module = result
+
+        student_id, date, result_id, score, item_id, max_value, min_value, class_id, item_module, item_instance = result
+
+        if item_module is not None:
+            # to make a reference to the object of the module table
+            lineitem_id = str(item_module) + '_' + str(item_instance)
+        else:
+            lineitem_id = 'other_' + str(item_id)  # unknown module type
+
 
         if date > 0:
             date = str(datetime.datetime.utcfromtimestamp(date).isoformat()) + '.755Z'
         else:
             date = ""
 
-        # Creation of the Result object
         res_object = {
             'sourcedId': result_id,
             'score': str(score),
@@ -100,7 +92,7 @@ def insert_grades(query, sql_where):
                 'sourcedId': student_id
             },
             'lineitem': {
-                'sourcedId': str(lineitem_id)
+                'sourcedId': lineitem_id
             },
             'metadata': {
                 'category': 'Moodle',
@@ -121,46 +113,6 @@ def insert_grades(query, sql_where):
             exit_log(result_id, str(e.message.content))
         except requests.exceptions.ConnectionError as e:
             exit_log(result_id, e)
-
-        # Creation of Line Items
-
-        res = False  # First we check if the lineItem already exists in the database
-        item_id = lineitem_id
-
-
-        # Check if LineItem already exists
-        try:
-            if mongo_lineitems[item_id]:
-                break
-        except KeyError:
-            exist = False
-
-        if not res:
-            item = {
-                "sourcedId": item_id,
-                "title": item_name,
-                "description": "",
-                "assignDate": date,
-                "dueDate": "",
-                "resultValueMin": str(min_value),
-                "resultValueMax": str(max_value),
-                "class": {
-                    "sourcedId": class_id
-                }
-            }
-
-            try:
-                OpenLrw.post_lineitem(item, JWT, False)
-            except ExpiredTokenException:
-                JWT = OpenLrw.generate_jwt()
-                OpenLrw.post_lineitem(item, JWT, False)
-            except InternalServerErrorException as e:
-                exit_log('Unable to create the LineItem ' + item_id, e.message.content)
-            except requests.exceptions.ConnectionError as e:
-                exit_log('Unable to create the LineItem ' + item_id, e)
-
-            # Add new line item to the dynamic array
-            line_items.append(item)
 
     return len(results)
 
