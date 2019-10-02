@@ -15,13 +15,12 @@ import os
 import re
 import requests
 
-
 sys.path.append(os.path.dirname(__file__) + '/../../..')
 from bootstrap.helpers import *
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_classes.log', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                    filename=os.path.dirname(__file__) + '/import_classes.log', level=logging.INFO)
 OpenLRW.enable_argparse()  # Otherwise it creates an error
-
 
 # -------------- GLOBAL --------------
 DB_HOST = SETTINGS['db_moodle']['host']
@@ -51,10 +50,23 @@ def exit_log(course_id, reason):
     sys.exit(0)
 
 
+def generate_json(course_id, title, status, summary, last_modified, class_code, population_bali):
+    return {
+        'sourcedId': course_id,
+        'title': title,
+        'status': status,
+        'metadata': {
+            'summary': summary,
+            'lastModified': last_modified,
+            'classCode': class_code,
+            'populationBali': population_bali
+        }
+    }
+
+
 # -------------- DATABASES --------------
 db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
 query = db.cursor()
-
 
 if not os.path.isfile(FILE_PATH):
     OpenLRW.pretty_error(FILE_PATH + " does not exist", "You have to create it, check the documentation.")
@@ -62,14 +74,14 @@ if not os.path.isfile(FILE_PATH):
 
 active_classes = []
 f = open(FILE_PATH, "r")
-print("Parsing the file...")
+print("Executing the script..")
 
 for line in f:
     if line.startswith('#') or line.startswith(' '):
         continue
     content = re.search(r'\d+', line)
     if content:  # solve issues for lines with only characters
-        active_classes.append(content.group())
+        active_classes.append(str(content.group()))
 
 # Query to get a population (BALI)
 query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
@@ -92,37 +104,24 @@ courses = query.fetchall()
 
 for course in courses:
     course_id, identifier, title, last_modified, summary = course
+    population_bali = population[course_id] if course_id in population else None
+    class_code = identifier if identifier != '' else None
 
+    # If the active_class file is empty, we set all the moodle classes as active
     if len(active_classes) == 0:
-        json = {
-            'sourcedId': course_id,
-            'title': title,
-            'status': 'active',
-            'metadata': {
-                'summary': summary,
-                'lastModified': last_modified,
-                'classCode': identifier if identifier != '' else None,
-                'populationBali': population[course_id] if course_id in population else None
-            }
-        }
+        data = generate_json(course_id, title, 'active', summary, last_modified, class_code, population_bali)
     else:
-        json = {
-            'sourcedId': course_id,
-            'title': title,
-            'status': 'active' if course_id in active_classes else 'inactive',
-            'metadata': {
-                'summary': summary,
-                'lastModified': last_modified,
-                'classCode': identifier if identifier != '' else None,
-                'populationBali': population[course_id] if course_id in population else None
-            }
-        }
+        status = 'inactive'
+        if str(course_id) in active_classes:
+            status = 'active'
+
+        data = generate_json(course_id, title, status, summary, last_modified, class_code, population_bali)
 
     try:
-        OpenLrw.post_class(json, JWT, True)
+        OpenLrw.post_class(data, JWT, True)
     except ExpiredTokenException:
         JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_class(json, JWT, True)
+        OpenLrw.post_class(data, JWT, True)
     except InternalServerErrorException:
         exit_log(course_id, "Internal Server Error 500")
 
@@ -131,7 +130,8 @@ db.close()
 OpenLRW.pretty_message("Script executed", "Classes sent : " + str(len(courses)))
 
 message = sys.argv[0] + "executed in " + measure_time() + " seconds" \
-          " \n\n -------------- \n SUMMARY \n -------------- \n" + str(len(courses)) + " classes sent"
+                                                          " \n\n -------------- \n SUMMARY \n -------------- \n" + str(
+    len(courses)) + " classes sent"
 
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
 logging.info(message)
