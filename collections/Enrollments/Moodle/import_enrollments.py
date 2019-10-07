@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -75,7 +75,7 @@ elif args['update'] is True:
     jwt = OpenLrw.generate_jwt()
     last_enrollment = OpenLrw.http_auth_get('/api/enrollments?orderBy=begindate&page=0&limit=1', jwt)
     if last_enrollment is None:
-        OpenLrw.pretty_error("Error", "There is no enrollments")
+        OpenLrw.pretty_error("ERROR : " + str(sys.argv[0]), "There is no enrollments")
         OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either, there is no enrollments")
         exit()
     last_enrollment = json.loads(last_enrollment)[0]
@@ -131,5 +131,5 @@ message = "import_enrollments.py finished its execution in " + measure_time() + 
           "\n\n -------------- \n SUMMARY \n -------------- \n Total number of enrollments sent : "\
           + str(len(enrollments))
 
-OpenLrw.mail_server("Subject: Moodle Enrollments script finished", message)
+OpenLrw.mail_server(str(sys.argv[0]) + " executed", message)
 logging.info("Script finished | Total number of enrollments sent : " + str(len(enrollments)))
