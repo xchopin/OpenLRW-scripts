@@ -208,6 +208,6 @@ OpenLRW.pretty_message("Script finished", "Total number of users imported : " + 
 
 message = str("LDAP Users imported (" + str(sys.argv[1]) + " method) in " + measure_time() + " seconds \n \n Total number of users imported : " + str(COUNTER))
 
-OpenLrw.mail_server(str(sys.argv[0]) + " summary", message)
+OpenLrw.mail_server(str(sys.argv[0]) + " executed", message)
 logging.info(message)
 sys.exit(0)
