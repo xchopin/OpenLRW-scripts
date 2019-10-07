@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -22,9 +22,8 @@ from bootstrap.helpers import *
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/map_classes.log', level=logging.INFO)
 OpenLRW.enable_argparse()  # Otherwise it creates an error
 
-
 COUNTER = 0
-GRADES_FILE = 'data/LineItems/mapping.csv'
+LINEITEMS_FILE = SETTINGS['apogee']['lineitems_name_filepath']
 
 
 def exit_log(reason):
@@ -42,8 +41,7 @@ def exit_log(reason):
 
 # -------------- MAIN --------------
 
-
-OpenLRW.pretty_message("CSV File used for the import", GRADES_FILE)
+OpenLRW.pretty_message("CSV File used for the import", LINEITEMS_FILE)
 
 JWT = OpenLrw.generate_jwt()
 
@@ -58,16 +56,15 @@ if classes is None:
 
 
 lineitems_to_fix = json.loads(lineitems)
-
 classes = json.loads(classes)
 
 classes_with_classcode = []
-for klass in classes:
+for klass in classes:  # the objective of this script is to get classes with a "classCode" and then to map them
     try:
         if klass['klass']['metadata']["classCode"]:
             classes_with_classcode.append(klass)
     except TypeError:
-        pass  # classCode is not defined, let skip
+        pass  # classCode is not defined, let's skip
 
 LINEITEM_TOTAL = len(lineitems_to_fix)
 
@@ -87,7 +84,6 @@ for lineItem in lineitems_to_fix:
                         "title": lineItem["title"]
                     }
                 }
-                COUNTER = COUNTER + 1
                 try:
                     OpenLrw.post_lineitem(data, JWT, True)
                 except ExpiredTokenException:
@@ -98,15 +94,12 @@ for lineItem in lineitems_to_fix:
                 except requests.exceptions.ConnectionError as e:
                     exit_log('Unable to create the LineItem ' + lineItem["sourcedId"], e)
 
+                COUNTER = COUNTER + 1
 
 
 
-
-
-
-OpenLrw.pretty_message("Script finished", "Total number of line items edited : " + str(COUNTER))
+OpenLrw.pretty_message("Script executed", "Total number of line items edited : " + str(COUNTER))
 
 message = sys.argv[0] + "(Mapping Apogée CSV and Results) executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + "LineItems edited : " + str(COUNTER) + " on " + str(LINEITEM_TOTAL)
-
 OpenLrw.mail_server(sys.argv[0] + " executed", message)
 logging.info(message)
