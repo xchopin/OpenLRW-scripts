@@ -266,9 +266,8 @@ def import_last_results():
 
 
 # -------------- MAIN --------------
-# OpenLRW.pretty_message("CSV Files used for the import", FILE_NAME + " | " + RESULT_NAMES)
 
-if (args['last'] is None) and (args['update'] is False):
+if (args['last'] is False) and (args['update'] is False):
     OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
     exit()
 
