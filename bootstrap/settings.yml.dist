@@ -23,8 +23,9 @@ db_moodle:
   password: ""
 
 apogee:
-    # Path to the file that contains the LineItem names [USE AN ABSOLUTE PATH]
-    lineitems_name_filepath: ""
+    # Path to the file that contains the LineItem names / you should use absolute path
+    lineitems_name_filepath: "/home/OpenLRW-scripts/data/LineItems/Apogee/lineitems_name.csv"
+    results_directory: "//home/OpenLRW-scripts/data/LineItems/Apogee/results/"
 
 classes:
     # Path to the file that contains the active classes, template file at ../data/Classes/active_classes.txt.dist - [USE AN ABSOLUTE PATH]
