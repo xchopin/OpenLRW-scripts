@@ -66,7 +66,14 @@ def generate_json(course_id, title, status, summary, last_modified, class_code, 
 
 
 # -------------- DATABASES --------------
-db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
+paramMysql = {
+    'host' : DB_HOST,
+    'user' : DB_USERNAME,
+    'passwd' : DB_PASSWORD,
+    'db' : DB_NAME,
+    'charset' : 'utf8mb4'
+}
+db = MySQLdb.connect(**paramMysql)
 query = db.cursor()
 
 if not os.path.isfile(FILE_PATH):
