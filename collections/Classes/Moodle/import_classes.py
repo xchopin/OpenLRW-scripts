@@ -28,6 +28,7 @@ DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 FILE_PATH = SETTINGS['classes']['active_classes_filepath']
+BALI = SETTINGS['classes']['bali']
 MAIL = None
 
 
@@ -84,17 +85,20 @@ for line in f:
         active_classes.append(str(content.group()))
 
 # Query to get a population (BALI)
-query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
-              "WHERE mdl_context.id = mdl_enrol_bali.contextid AND contextlevel = 50 AND type = 'FORM' ")
+if BALI == "true":
+    query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
+                  "WHERE mdl_context.id = mdl_enrol_bali.contextid AND contextlevel = 50 AND type = 'FORM' ")
 
-results = query.fetchall()
-population = dict()
-for result in results:
-    if result[0] in population:  # If this key already exists it concatenates
-        population[result[0]] += "|" + str(result[1])
-    else:
-        population[result[0]] = result[1]
-
+    results = query.fetchall()
+    population = dict()
+    for result in results:
+        if result[0] in population:  # If this key already exists it concatenates
+            population[result[0]] += "|" + str(result[1])
+        else:
+            population[result[0]] = result[1]
+else:
+  population = {}
+  
 # Query to get all the visible courses
 query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_course WHERE visible = 1")
 
