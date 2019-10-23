@@ -180,7 +180,14 @@ def import_other_module(cursor, mongolineitems):
 
 
 # -------------- MAIN --------------
-db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
+paramMysql = {
+    'host' : DB_HOST,
+    'user' : DB_USERNAME,
+    'passwd' : DB_PASSWORD,
+    'db' : DB_NAME,
+    'charset' : 'utf8mb4'
+}
+db = MySQLdb.connect(**paramMysql)
 cursor = db.cursor()
 cursor.execute("SELECT itemmodule FROM mdl_grade_items WHERE itemmodule IS NOT NULL AND itemmodule != '' GROUP BY itemmodule;")
 modules = cursor.fetchall()
