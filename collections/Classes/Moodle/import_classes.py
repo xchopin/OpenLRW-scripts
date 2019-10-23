@@ -104,7 +104,7 @@ if BALI == "true":
         else:
             population[result[0]] = result[1]
 else:
-  population = {}
+    population = {}
   
 # Query to get all the visible courses
 query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_course WHERE visible = 1")
