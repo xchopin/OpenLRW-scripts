@@ -30,3 +30,4 @@ apogee:
 classes:
     # Path to the file that contains the active classes, template file at ../data/Classes/active_classes.txt.dist - [USE AN ABSOLUTE PATH]
     active_classes_filepath: "/home/OpenLRW-scripts/data/Classes/active_classes.txt"
+    bali: "true"
