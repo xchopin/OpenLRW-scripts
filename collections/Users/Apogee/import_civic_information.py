@@ -58,7 +58,6 @@ def last_files(days=1):
 
 def treat_last_files():
     files_to_import = last_files()
-    print files_to_import
     counter = 0
     for file in files_to_import:
         counter += parse_file(file)
