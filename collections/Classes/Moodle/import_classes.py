@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -28,7 +28,7 @@ DB_NAME = SETTINGS['db_moodle']['name']
 DB_USERNAME = SETTINGS['db_moodle']['username']
 DB_PASSWORD = SETTINGS['db_moodle']['password']
 FILE_PATH = SETTINGS['classes']['active_classes_filepath']
-BALI = SETTINGS['classes']['bali']
+BALI = SETTINGS['classes']['has_bali_population']
 MAIL = None
 
 
@@ -66,14 +66,14 @@ def generate_json(course_id, title, status, summary, last_modified, class_code, 
 
 
 # -------------- DATABASES --------------
-paramMysql = {
+mysql_parameters = {
     'host' : DB_HOST,
     'user' : DB_USERNAME,
     'passwd' : DB_PASSWORD,
     'db' : DB_NAME,
     'charset' : 'utf8mb4'
 }
-db = MySQLdb.connect(**paramMysql)
+db = MySQLdb.connect(**mysql_parameters)
 query = db.cursor()
 
 if not os.path.isfile(FILE_PATH):
@@ -91,20 +91,18 @@ for line in f:
     if content:  # solve issues for lines with only characters
         active_classes.append(str(content.group()))
 
+population = dict()        
 # Query to get a population (BALI)
 if BALI == "true":
     query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
                   "WHERE mdl_context.id = mdl_enrol_bali.contextid AND contextlevel = 50 AND type = 'FORM' ")
 
     results = query.fetchall()
-    population = dict()
     for result in results:
         if result[0] in population:  # If this key already exists it concatenates
             population[result[0]] += "|" + str(result[1])
         else:
             population[result[0]] = result[1]
-else:
-    population = {}
   
 # Query to get all the visible courses
 query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_course WHERE visible = 1")
