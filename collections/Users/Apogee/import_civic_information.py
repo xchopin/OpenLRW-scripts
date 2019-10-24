@@ -58,6 +58,7 @@ def last_files(days=1):
 
 def treat_last_files():
     files_to_import = last_files()
+    print files_to_import
     counter = 0
     for file in files_to_import:
         counter += parse_file(file)
@@ -70,9 +71,10 @@ def parse_file(filename):
     JWT = OpenLrw.generate_jwt()
 
     for user in users:
-        user_id = user[0]
+    	academic_group = user[0] # useless
+        user_id = user[1]
 
-        information = user[1].split('-')  # create an array of the concatenated string
+        information = user[2].split('-')  # create an array of the concatenated string
         birth_year = information[0]
         gender = information[1]
         children = information[2]
@@ -94,7 +96,8 @@ def parse_file(filename):
             user_object = OpenLrw.get_user(user_id, JWT)
 
         if user_object:
-            user = json.loads(user)
+            user = json.loads(user_object)
+            user["metadata"]["academic_group"] = academic_group
             user["metadata"]["birth_year"] = birth_year
             user["metadata"]["gender"] = gender
             user["metadata"]["children"] = children
