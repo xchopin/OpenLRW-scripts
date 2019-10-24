@@ -25,7 +25,8 @@ db_moodle:
 apogee:
     # Path to the file that contains the LineItem names / you should use absolute path
     lineitems_name_filepath: "/home/OpenLRW-scripts/data/LineItems/Apogee/lineitems_name.csv"
-    results_directory: "//home/OpenLRW-scripts/data/LineItems/Apogee/results/"
+    results_directory: "/home/OpenLRW-scripts/data/LineItems/Apogee/results/"
+    civic_information_directory: "/home/OpenLRW-scripts/data/Users/Apogee/civic_information/"
 
 classes:
     # Path to the file that contains the active classes, template file at ../data/Classes/active_classes.txt.dist - [USE AN ABSOLUTE PATH]
