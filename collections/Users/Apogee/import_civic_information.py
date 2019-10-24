@@ -37,9 +37,6 @@ def exit_log(user_id, reason):
     sys.exit(0)
 
 
-csv_file = open('data/Users/baccalaureat_student.csv', 'r')
-
-
 URI = SETTINGS['api']['uri'] + '/api'
 COUNTER = 0
 MAIL = None
@@ -58,6 +55,7 @@ def last_files(days=1):
 
 def treat_last_files():
     files_to_import = last_files()
+    print files_to_import
     counter = 0
     for file in files_to_import:
         counter += parse_file(file)
