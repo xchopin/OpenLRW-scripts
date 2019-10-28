@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -37,7 +37,6 @@ def exit_log(user_id, reason):
     sys.exit(0)
 
 
-URI = SETTINGS['api']['uri'] + '/api'
 COUNTER = 0
 MAIL = None
 CIVIC_INFORMATION_DIRECTORY = SETTINGS['apogee']['civic_information_directory']
@@ -63,26 +62,26 @@ def treat_last_files():
 
 def parse_file(filename):
     counter = 0
-    users = list(csv.reader(open(filename, 'r'), delimiter=';'))
+    reader = csv.reader(open(filename, 'r'), delimiter=';')
+    next(reader, None)  # skip the headers
+    users = list(reader)
     JWT = OpenLrw.generate_jwt()
 
     for user in users:
-    	academic_group = user[0] # useless
+        academic_group = user[0]
         user_id = user[1]
-
-        information = user[2].split('-')  # create an array of the concatenated string
-        birth_year = information[0]
-        gender = information[1]
-        children = information[2]
-        handicap = information[3]
-        has_scholarship = information[4] == 'O'
-        has_job = information[5] == 'O'
-        has_adapted_study_plan = information[6] == 'O'
-        city = information[7]
-        bac_year = information[8]
-        bac_type = information[9]
-        bac_zipcode = information[10]
-        bac_honor = information[11]
+        birth_year = user[2]
+        gender = user[3]
+        children = user[4]
+        handicap = user[5]
+        has_scholarship = user[6] == 'O'
+        has_job = user[7] == 'O'
+        has_adapted_study_plan = user[8] == 'O'
+        city = user[9]
+        bac_year = user[10]
+        bac_type = user[11]
+        bac_zipcode = user[12]
+        bac_honor = user[13]
 
 
         try:
