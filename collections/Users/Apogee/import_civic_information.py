@@ -20,8 +20,18 @@ import glob
 import time
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', filename=os.path.dirname(__file__) + '/import_civic_information.log', level=logging.INFO)
-OpenLRW.enable_argparse()  # Otherwise it creates an error
 
+
+parser = OpenLRW.parser
+parser.add_argument('-l', '--last',  action='store_true', help='Parse the .csv files that contain the date of yesterday with YYYYmmdd format (eg: export1_20191029.csv)')
+parser.add_argument('-f', '--file', action='store_true', help='Parse a .csv file given (absolute path)')
+
+args = vars(OpenLRW.enable_argparse())
+
+
+COUNTER = 0
+MAIL = None
+CIVIC_INFORMATION_DIRECTORY = SETTINGS['apogee']['civic_information_directory']
 
 def exit_log(user_id, reason):
     """
@@ -37,9 +47,11 @@ def exit_log(user_id, reason):
     sys.exit(0)
 
 
-COUNTER = 0
-MAIL = None
-CIVIC_INFORMATION_DIRECTORY = SETTINGS['apogee']['civic_information_directory']
+def treat_file(filename):
+    if os.path.exists(filename):
+        return parse_file(filename)
+    else:
+        OpenLrw.mail_server(str(sys.argv[0]) + ' error', str(filename) + ' does not exist.')
 
 
 def last_files(days=1):
@@ -121,7 +133,14 @@ def parse_file(filename):
     return counter
 
 
-COUNTER = treat_last_files()
+if args['last'] is True:
+    COUNTER = treat_last_files()
+elif args['file'] is not None:
+    COUNTER = treat_last_files()
+else:
+    OpenLrw.pretty_error("Wrong argument", "Please use --help for  ")
+    exit()
+
 
 time = measure_time()
 
