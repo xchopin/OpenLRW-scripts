@@ -66,81 +66,87 @@ def generate_json(course_id, title, status, summary, last_modified, class_code, 
 
 
 # -------------- DATABASES --------------
-mysql_parameters = {
-    'host' : DB_HOST,
-    'user' : DB_USERNAME,
-    'passwd' : DB_PASSWORD,
-    'db' : DB_NAME,
-    'charset' : 'utf8mb4'
-}
-db = MySQLdb.connect(**mysql_parameters)
-query = db.cursor()
 
-if not os.path.isfile(FILE_PATH):
-    OpenLRW.pretty_error(FILE_PATH + " does not exist", "You have to create it, check the documentation.")
+try:
+    mysql_parameters = {
+        'host' : DB_HOST,
+        'user' : DB_USERNAME,
+        'passwd' : DB_PASSWORD,
+        'db' : DB_NAME,
+        'charset' : 'utf8mb4'
+    }
+    db = MySQLdb.connect(**mysql_parameters)
+    query = db.cursor()
+
+    if not os.path.isfile(FILE_PATH):
+        OpenLrw.mail_server(str(sys.argv[0]) + " error", FILE_PATH + " does not exist.")
+        OpenLRW.pretty_error(FILE_PATH + " does not exist", "You have to create it, check the documentation.")
+        exit()
+
+    active_classes = []
+    f = open(FILE_PATH, "r")
+    print("Executing the script..")
+
+    for line in f:
+        if line.startswith('#') or line.startswith(' '):
+            continue
+        content = re.search(r'\d+', line)
+        if content:  # solve issues for lines with only characters
+            active_classes.append(str(content.group()))
+
+    population = dict()
+    # Query to get a population (BALI)
+    if BALI == "true":
+        query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
+                      "WHERE mdl_context.id = mdl_enrol_bali.contextid AND contextlevel = 50 AND type = 'FORM' ")
+
+        results = query.fetchall()
+        for result in results:
+            if result[0] in population:  # If this key already exists it concatenates
+                population[result[0]] += "|" + str(result[1])
+            else:
+                population[result[0]] = result[1]
+
+    # Query to get all the visible courses
+    query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_course WHERE visible = 1")
+
+    JWT = OpenLrw.generate_jwt()
+
+    courses = query.fetchall()
+
+    for course in courses:
+        course_id, identifier, title, last_modified, summary = course
+        population_bali = population[course_id] if course_id in population else None
+        class_code = identifier if identifier != '' else None
+
+        # If the active_class file is empty, we set all the moodle classes as active
+        if len(active_classes) == 0:
+            data = generate_json(course_id, title, 'active', summary, last_modified, class_code, population_bali)
+        else:
+            status = 'inactive'
+            if str(course_id) in active_classes:
+                status = 'active'
+
+            data = generate_json(course_id, title, status, summary, last_modified, class_code, population_bali)
+
+        try:
+            OpenLrw.post_class(data, JWT, True)
+        except ExpiredTokenException:
+            JWT = OpenLrw.generate_jwt()
+            OpenLrw.post_class(data, JWT, True)
+        except InternalServerErrorException:
+            exit_log(course_id, "Internal Server Error 500")
+
+    db.close()
+
+    OpenLRW.pretty_message("Script executed", "Classes sent : " + str(len(courses)))
+    message = sys.argv[0] + "executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" + str(len(courses)) + " classes sent"
+
+    # OpenLrw.mail_server(sys.argv[0] + " executed", message)
+    logging.info(message)
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
     exit()
 
-active_classes = []
-f = open(FILE_PATH, "r")
-print("Executing the script..")
-
-for line in f:
-    if line.startswith('#') or line.startswith(' '):
-        continue
-    content = re.search(r'\d+', line)
-    if content:  # solve issues for lines with only characters
-        active_classes.append(str(content.group()))
-
-population = dict()        
-# Query to get a population (BALI)
-if BALI == "true":
-    query.execute("SELECT instanceid, valeur FROM mdl_enrol_bali, mdl_context " +
-                  "WHERE mdl_context.id = mdl_enrol_bali.contextid AND contextlevel = 50 AND type = 'FORM' ")
-
-    results = query.fetchall()
-    for result in results:
-        if result[0] in population:  # If this key already exists it concatenates
-            population[result[0]] += "|" + str(result[1])
-        else:
-            population[result[0]] = result[1]
-  
-# Query to get all the visible courses
-query.execute("SELECT id, idnumber, fullname, timemodified, summary FROM mdl_course WHERE visible = 1")
-
-JWT = OpenLrw.generate_jwt()
-
-courses = query.fetchall()
-
-for course in courses:
-    course_id, identifier, title, last_modified, summary = course
-    population_bali = population[course_id] if course_id in population else None
-    class_code = identifier if identifier != '' else None
-
-    # If the active_class file is empty, we set all the moodle classes as active
-    if len(active_classes) == 0:
-        data = generate_json(course_id, title, 'active', summary, last_modified, class_code, population_bali)
-    else:
-        status = 'inactive'
-        if str(course_id) in active_classes:
-            status = 'active'
-
-        data = generate_json(course_id, title, status, summary, last_modified, class_code, population_bali)
-
-    try:
-        OpenLrw.post_class(data, JWT, True)
-    except ExpiredTokenException:
-        JWT = OpenLrw.generate_jwt()
-        OpenLrw.post_class(data, JWT, True)
-    except InternalServerErrorException:
-        exit_log(course_id, "Internal Server Error 500")
-
-db.close()
-
-OpenLRW.pretty_message("Script executed", "Classes sent : " + str(len(courses)))
-
-message = sys.argv[0] + "executed in " + measure_time() + " seconds" \
-                                                          " \n\n -------------- \n SUMMARY \n -------------- \n" + str(
-    len(courses)) + " classes sent"
-
-OpenLrw.mail_server(sys.argv[0] + " executed", message)
-logging.info(message)

@@ -172,105 +172,117 @@ DB_PASSWORD = SETTINGS['db_moodle']['password']
 COUNTER_JSON_SENT = 0
 TOTAL_EVENT = 0
 
-
-if (args['timestamps'] is None) and (args['update'] is False):
-    OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
-    exit()
-
-
-if args['timestamps'] is not None:
-    args = args['timestamps']
-    if re.match(TIMESTAMP_REGEX, args[0]) and re.match(TIMESTAMP_REGEX, args[1]):
-        sql_where = "WHERE timecreated >= " + args[0]+ " AND timecreated <= " + args[1]
-    else:
-        OpenLrw.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
-elif args['update'] is True:
-    jwt = OpenLrw.generate_jwt()
-    last_event = OpenLrw.http_auth_get('/api/events/sources/moodle?page=0&limit=1', jwt)
-
-    if last_event is None:
-        OpenLrw.pretty_error("NO MOODLE EVENTS", "There is no Moodle events, please use timestamps argument instead")
-        OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either there is no Moodle events.")
+try:
+    if (args['timestamps'] is None) and (args['update'] is False):
+        OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
         exit()
 
-    last_event = json.loads(last_event)[0]
-    date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.%fZ')
-    timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
-    sql_where = "WHERE timecreated > " + str(timestamp)
 
-
-db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
-query = db.cursor()
-
-# Map Moodle user id to their CAS uid
-query.execute("SELECT id, username FROM mdl_user WHERE deleted=0 AND username LIKE '%u';")
-users = query.fetchall()
-moodle_students = {}
-for user in users:
-    moodle_students[user[0]] = user[1]
-
-#  Map Moodle course ids to their name
-query.execute("SELECT id, fullname FROM mdl_course;")
-courses = query.fetchall()
-moodle_courses = {}
-for course in courses:
-    moodle_courses[course[0]] = course[1]
-
-
-query.execute(
-    "SELECT userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
-    "FROM mdl_logstore_standard_log " + sql_where)
-
-rows_log = query.fetchall()
-
-TOTAL_EVENT = len(rows_log)
-
-for row_log in rows_log:
-    row = None  # Clears previous buffer
-    row = {"userId": row_log[0], "courseId": row_log[1], "eventName": row_log[2], "component": row_log[3],
-           "action": row_log[4], "target": row_log[5], "objecttable": row_log[6], "objectId": row_log[7],
-           "timeCreated": row_log[8], "id": row_log[9]}
-
-    if row["userId"] in moodle_students:  # Checks if users isn't deleted from the db
-        if row["courseId"] in moodle_courses:  # Checks if the course given exists in Moodle
-            course_name = moodle_courses[row["courseId"]]
+    if args['timestamps'] is not None:
+        args = args['timestamps']
+        if re.match(TIMESTAMP_REGEX, args[0]) and re.match(TIMESTAMP_REGEX, args[1]):
+            sql_where = "WHERE timecreated >= " + args[0]+ " AND timecreated <= " + args[1]
         else:
-            course_name = "Deleted Course"
+            OpenLrw.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+    elif args['update'] is True:
+        try:
+            jwt = OpenLrw.generate_jwt()
+            last_event = OpenLrw.http_auth_get('/api/events/sources/moodle?page=0&limit=1', jwt)
 
-        if row["eventName"] == "\core\event\course_viewed":  # Course viewed
-            json = create_caliper_json(moodle_students[row["userId"]], "Viewed", row["courseId"], "CourseSection",
-                                       course_name, "", row["courseId"], "CourseSection", row["timeCreated"]
-            )
-        elif row["target"] == "course_module" and row["action"] == "viewed": # Module viewed
-            json = create_caliper_json(moodle_students[row["userId"]], "Viewed", row["objectId"], "DigitalResource",
-                                       get_module_name(row["objecttable"], row["objectId"]), row["component"],
-                                       row["courseId"], "CourseSection", row["timeCreated"]
-            )
+            if last_event is None:
+                OpenLrw.pretty_error("NO MOODLE EVENTS", "There is no Moodle events, please use timestamps argument instead")
+                OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either there is no Moodle events.")
+                exit()
 
-        elif row["eventName"] == "\mod_assign\event\\assessable_submitted":  # Exam submitted
-            json = create_caliper_json(moodle_students[row["userId"]], "Submitted", row["objectId"], "AssignableDigitalResource",
-                                       get_assignment_name(row["objectId"]), "", row["courseId"], "CourseSection", row["timeCreated"]
-            )
+            last_event = json.loads(last_event)[0]
+            date = datetime.datetime.strptime(last_event['eventTime'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
+            sql_where = "WHERE timecreated > " + str(timestamp)
+        except:
+            OpenLrw.pretty_error("NO MOODLE EVENTS",
+                                 "There is no Moodle events, please use timestamps argument instead")
+            OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either there is no Moodle events.")
+            exit()
 
-        elif row["component"] == "mod_quiz" and row["action"] == "submitted":  # Quiz submitted
-            json = create_caliper_json(moodle_students[row["userId"]], "Submitted", row["objectId"],
-                                       "Assessment", get_quiz_name(row["objectId"]), "", row["courseId"], "CourseSection",
-                                       row["timeCreated"]
-            )
 
-        else:
-            continue
 
-        COUNTER_JSON_SENT += 1
-        send_caliper_event(json, str(row["id"]), str(row["timeCreated"]))
+    db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
+    query = db.cursor()
 
-db.close()
+    # Map Moodle user id to their CAS uid
+    query.execute("SELECT id, username FROM mdl_user WHERE deleted=0 AND username LIKE '%u';")
+    users = query.fetchall()
+    moodle_students = {}
+    for user in users:
+        moodle_students[user[0]] = user[1]
 
-OpenLRW.pretty_message("Script executed", "Total number of events : " + str(TOTAL_EVENT) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
+    #  Map Moodle course ids to their name
+    query.execute("SELECT id, fullname FROM mdl_course;")
+    courses = query.fetchall()
+    moodle_courses = {}
+    for course in courses:
+        moodle_courses[course[0]] = course[1]
 
-message = str(sys.argv[0]) + " finished its execution in " + measure_time()
-message += " seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of events : "
-message += str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
 
-OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
-logging.info(message)
+    query.execute(
+        "SELECT userid, courseid, eventname, component, action, target, objecttable, objectid, timecreated, id "
+        "FROM mdl_logstore_standard_log " + sql_where)
+
+    rows_log = query.fetchall()
+
+    TOTAL_EVENT = len(rows_log)
+
+    for row_log in rows_log:
+        row = None  # Clears previous buffer
+        row = {"userId": row_log[0], "courseId": row_log[1], "eventName": row_log[2], "component": row_log[3],
+               "action": row_log[4], "target": row_log[5], "objecttable": row_log[6], "objectId": row_log[7],
+               "timeCreated": row_log[8], "id": row_log[9]}
+
+        if row["userId"] in moodle_students:  # Checks if users isn't deleted from the db
+            if row["courseId"] in moodle_courses:  # Checks if the course given exists in Moodle
+                course_name = moodle_courses[row["courseId"]]
+            else:
+                course_name = "Deleted Course"
+
+            if row["eventName"] == "\core\event\course_viewed":  # Course viewed
+                json = create_caliper_json(moodle_students[row["userId"]], "Viewed", row["courseId"], "CourseSection",
+                                           course_name, "", row["courseId"], "CourseSection", row["timeCreated"]
+                )
+            elif row["target"] == "course_module" and row["action"] == "viewed": # Module viewed
+                json = create_caliper_json(moodle_students[row["userId"]], "Viewed", row["objectId"], "DigitalResource",
+                                           get_module_name(row["objecttable"], row["objectId"]), row["component"],
+                                           row["courseId"], "CourseSection", row["timeCreated"]
+                )
+
+            elif row["eventName"] == "\mod_assign\event\\assessable_submitted":  # Exam submitted
+                json = create_caliper_json(moodle_students[row["userId"]], "Submitted", row["objectId"], "AssignableDigitalResource",
+                                           get_assignment_name(row["objectId"]), "", row["courseId"], "CourseSection", row["timeCreated"]
+                )
+
+            elif row["component"] == "mod_quiz" and row["action"] == "submitted":  # Quiz submitted
+                json = create_caliper_json(moodle_students[row["userId"]], "Submitted", row["objectId"],
+                                           "Assessment", get_quiz_name(row["objectId"]), "", row["courseId"], "CourseSection",
+                                           row["timeCreated"]
+                )
+
+            else:
+                continue
+
+            COUNTER_JSON_SENT += 1
+            send_caliper_event(json, str(row["id"]), str(row["timeCreated"]))
+
+    db.close()
+
+    OpenLRW.pretty_message("Script executed", "Total number of events : " + str(TOTAL_EVENT) + " - Caliper Events sent: " + str(COUNTER_JSON_SENT))
+
+    message = str(sys.argv[0]) + " finished its execution in " + measure_time()
+    message += " seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of events : "
+    message += str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
+
+    OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
+    logging.info(message)
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()
