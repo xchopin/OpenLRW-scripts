@@ -272,7 +272,7 @@ $ python collections/Results/Moodle/import_results.py --from TIMESTAMP --to TIME
 $ python collections/Results/Moodle/import_results.py -u
 ```  
 
-#### - Apogée
+#### - Apogée (SIS)
  <p align="center">
    <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-.csv files (Apogée)-blue.svg?style=flat-square" alt="sources used">
@@ -281,60 +281,45 @@ $ python collections/Results/Moodle/import_results.py -u
  
 ##### Import results from Apogée
 
+> Import the results from an Apogée csv file; it also add LineItem objects if they don't exist. In order to link these new LineItems to a Moodle class you will have a to use a script (more details in LineItems section)
+
 ⚠ **Two field are required in the settings file**
    - **`results_directory` where you have to put files with the following format YYYYmmdd.csv eg: export1_20193010.csv**
    - **`lineitems_name_filepath` you have to indicate the absolute path of a csv file for the lineitems** 
   
-##### Sample of a result file
+###### Sample of a result file
 
-```csv
-```
-  
-##### Sample of a lineitems file
-
-```csv
-```  
-  
-  
-##### Import the results from the files containing 
-> Import all the results from the files containing the date of yesterday
-```bash
-$ python collections/Results/Apogee/import_results.py -l
-```        
-  
-  
-##### Update the results
-> Make a difference between the results of yesterday and the day before (for CRON)
-```bash
-$ python collections/Results/Apogee/import_results.py -u
-```      
-   
-   
-   
-   
- ##### Sample of apogee_results.csv
- 
  ```csv
 foobar1;2019;3WLAEIMIA;200;initiale;1WIN12;800;UE1-AAAAA1-17.0-ADM
 foobar2;2019;3WLAEIMIA;200;initiale;1WIN12;800;UE1-AAAAA1-12.0-ADM
 foobar2;2019;3WLOEIMIA;200;initiale;1WIN12;800;UE1-AAAAA3-12.0-null
 ```   
 
- ##### Sample of name.csv
- 
- ```csv
+###### Sample of a lineitems file
+
+```csv
 COD_ELP;LIB_ELP
 AAAAA1;Discret Math
 AAAAA2;Web applications with JavaEE
 AAAAA3;Management
 AAAAA4;Internship
 ```  
-   
-> Add the results by checking duplicates. It will add LineItem objects if they don't exist. In order to link these new LineItems to a Moodle class you will have a to use a script (more details in LineItems section)
-
+  
+  
+###### Import the results from the files containing 
+> Import all the results from the files containing the date of yesterday
 ```bash
-$ python collections/Results/Apogee/import_results.py /PATH_TO_YOUR_EXTRACTIONS/FILE.csv
-```   
+$ python collections/Results/Apogee/import_results.py -l
+```        
+  
+  
+###### Update the results
+> Make a difference between the results of yesterday and the day before (for CRON)
+```bash
+$ python collections/Results/Apogee/import_results.py -u
+```      
+   
+
  
 <hr>
 
