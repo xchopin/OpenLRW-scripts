@@ -111,28 +111,40 @@ $ python collections/Users/LDAP/import_users.py --update
 
 <br>
 
-#### - Add High school diploma (Baccalaureat) to students
+#### - Add their civic information
 <p align="center">
    <img src="https://img.shields.io/badge/language-Python-brightgreen.svg?style=flat-square" alt="language used">
    <img src="https://img.shields.io/badge/sources used-.csv file (Apogée)-blue.svg?style=flat-square" alt="sources used">
 </p>
 
-⚠ **Your source file has to be located at `data/Users/baccalaureat_student.csv`.**
+
+> The new information will be added into the `metadata` attribute of users.
 
 
-##### Sample of baccalaureat_student.csv
+- ##### Parse a file
+```
+$ python collections/Users/Apogee/import_civic_information.py --file path_to_your_file.csv
+```
+
+- ##### Parse the files containing the date of yesterday
+> Aimed to a CRON use - Format: YYYYmmdd.csv - eg: Students_CS_20191030.csv; Students_Biology_20191030.csv 
+
+⚠ **The repository of your source files has to be indicated in the settings file, at the  `civic_information_directory` attribute.**
+
+   
+
+```
+$ python collections/Users/Apogee/import_civic_information.py --file path_to_your_file.csv
+```
+
+
+##### Sample of a civic information file
 
 ```csv
-COD_ETU;COD_BAC;ANNEE_BAC;MNB_BAC
-foobar1;S;2013;AB
-foobar2;ES;2018;AB
-foobar3;S;2012;
-```
-
-> The new informations will be added into the `metadata` attribute.
-
-```
-$ python collections/Users/Apogee/update_baccalaureat.py
+CMP;LOGIN;YEAR;GENDER;CHILDREN;HANDICAP;HAS_SCHOLARSHIP;HAS_A_JOB;HAS_ADAPTED_STUDY_PLAN;CITY;BACCALAUREAT_YEAR;BACCALAUREAT_TYPE;BACCALAUREAT_ZIPCODE;BACCALAUREAT_HONOR
+AB0;foo;1998;F;0;null;N;O;N;PARIS;2018;ES;054;P
+AB0;bar;2000;F;0;null;N;O;N;NANCY;2017;ES;054;AB
+AB0;foobar;1991;M;0;null;N;N;O;LYON;2009;S;093;P
 ```
 
 <hr>
@@ -269,9 +281,36 @@ $ python collections/Results/Moodle/import_results.py -u
  
 ##### Import results from Apogée
 
-⚠ **Two files are required**
-   - **the first one has to be located at `data/Results/apogee_results.csv` (it contains all the results)**
-   - **the second has to be located at `data/Results/name.csv` (it contains the LineItem id and then the name of this LineItem** 
+⚠ **Two field are required in the settings file**
+   - **`results_directory` where you have to put files with the following format YYYYmmdd.csv eg: export1_20193010.csv**
+   - **`lineitems_name_filepath` you have to indicate the absolute path of a csv file for the lineitems** 
+  
+##### Sample of a result file
+
+```csv
+```
+  
+##### Sample of a lineitems file
+
+```csv
+```  
+  
+  
+##### Import the results from the files containing 
+> Import all the results from the files containing the date of yesterday
+```bash
+$ python collections/Results/Apogee/import_results.py -l
+```        
+  
+  
+##### Update the results
+> Make a difference between the results of yesterday and the day before (for CRON)
+```bash
+$ python collections/Results/Apogee/import_results.py -u
+```      
+   
+   
+   
    
  ##### Sample of apogee_results.csv
  
@@ -295,7 +334,6 @@ AAAAA4;Internship
 
 ```bash
 $ python collections/Results/Apogee/import_results.py /PATH_TO_YOUR_EXTRACTIONS/FILE.csv
-
 ```   
  
 <hr>
