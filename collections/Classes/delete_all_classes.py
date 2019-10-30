@@ -33,15 +33,21 @@ def exit_log(reason):
 JWT = OpenLrw.generate_jwt()
 
 try:
-    OpenLrw.delete_classes(JWT)
-except InternalServerErrorException as e:
-    exit_log(e.message.content)
-except requests.exceptions.ConnectionError as e:
-    exit_log(e)
+    try:
+        OpenLrw.delete_classes(JWT)
+    except InternalServerErrorException as e:
+        exit_log(e.message.content)
+    except requests.exceptions.ConnectionError as e:
+        exit_log(e)
 
 
-OpenLRW.pretty_message("Script finished", "Class collection deleted")
+    OpenLRW.pretty_message("Script finished", "Class collection deleted")
 
+    #OpenLrw.mail_server(sys.argv[0], "Class collection deleted")
 
-OpenLrw.mail_server(sys.argv[0], "Class collection deleted")
-logging.info("Collection deleted")
+    logging.info("Collection deleted")
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()

@@ -30,18 +30,23 @@ def exit_log(reason):
     OpenLRW.pretty_error("HTTP DELETE Error", "Cannot delete the enrollment collection")
     sys.exit(0)
 
-
-JWT = OpenLrw.generate_jwt()
-
 try:
-    OpenLrw.delete_enrollments(JWT)
-except InternalServerErrorException as e:
-    exit_log(e.message.content)
-except requests.exceptions.ConnectionError as e:
-    exit_log(e)
+    JWT = OpenLrw.generate_jwt()
+
+    try:
+        OpenLrw.delete_enrollments(JWT)
+    except InternalServerErrorException as e:
+        exit_log(e.message.content)
+    except requests.exceptions.ConnectionError as e:
+        exit_log(e)
 
 
-OpenLRW.pretty_message("Script finished", "Enrollment collection deleted")
+    OpenLRW.pretty_message("Script finished", "Enrollment collection deleted")
 
-OpenLrw.mail_server(sys.argv[0], "Enrollment collection deleted")
-logging.info("Collection deleted")
+    # OpenLrw.mail_server(sys.argv[0], "Enrollment collection deleted")
+    logging.info("Collection deleted")
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()
