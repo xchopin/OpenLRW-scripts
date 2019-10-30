@@ -118,47 +118,53 @@ def insert_grades(query, sql_where):
 
 
 # -------------- MAIN --------------
-sql_where = ""
+try:
+    sql_where = ""
 
-if (args['from'] is None) and (args['update'] is False):
-    OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
-    exit()
-
-
-if args['from'] is not None and args['to'] is None:  # only from
-    if re.match(TIMESTAMP_REGEX, args['from']):
-        sql_where = "AND grades.timemodified >= " + args['from']
-    else:
-        OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM)"])
-elif args['from'] is not None and args['to'] is not None:  # from and to
-    if re.match(TIMESTAMP_REGEX, args['from']) and re.match(TIMESTAMP_REGEX, args['to']):
-        sql_where = "AND grades.timemodified >= " + args['from'] + " AND grades.timemodified <= " + args['to']
-    else:
-        OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
-elif args['update'] is True:
-    jwt = OpenLrw.generate_jwt()
-    last_result = OpenLrw.http_auth_get('/api/results?page=0&limit=1', jwt)
-    if last_result is None:
-        OpenLrw.pretty_error("Error", "There is no result")
-        OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either, there is no result")
+    if (args['from'] is None) and (args['update'] is False):
+        OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
         exit()
-    last_result = json.loads(last_result)[0]
-    date = datetime.datetime.strptime(last_result['date'], '%Y-%m-%dT%H:%M:%S.%fZ')
-    query_timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
-    sql_where = "AND grades.timemodified > " + str(query_timestamp)
 
 
-db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
-query = db.cursor()
+    if args['from'] is not None and args['to'] is None:  # only from
+        if re.match(TIMESTAMP_REGEX, args['from']):
+            sql_where = "AND grades.timemodified >= " + args['from']
+        else:
+            OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM)"])
+    elif args['from'] is not None and args['to'] is not None:  # from and to
+        if re.match(TIMESTAMP_REGEX, args['from']) and re.match(TIMESTAMP_REGEX, args['to']):
+            sql_where = "AND grades.timemodified >= " + args['from'] + " AND grades.timemodified <= " + args['to']
+        else:
+            OpenLRW.pretty_error("Wrong usage", ["Arguments must be a timestamp (FROM and TO)"])
+    elif args['update'] is True:
+        jwt = OpenLrw.generate_jwt()
+        last_result = OpenLrw.http_auth_get('/api/results?page=0&limit=1', jwt)
+        if last_result is None:
+            OpenLrw.pretty_error("Error", "There is no result")
+            OpenLrw.mail_server("Subject: Error", "Either OpenLRW is turned off either, there is no result")
+            exit()
+        last_result = json.loads(last_result)[0]
+        date = datetime.datetime.strptime(last_result['date'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        query_timestamp = (date - datetime.datetime(1970, 1, 1)).total_seconds()
+        sql_where = "AND grades.timemodified > " + str(query_timestamp)
 
 
-COUNTER = insert_grades(query, sql_where)
+    db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
+    query = db.cursor()
 
-db.close()
 
-OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
+    COUNTER = insert_grades(query, sql_where)
 
-message = sys.argv[0] + " executed in " + measure_time() + "seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
+    db.close()
 
-OpenLrw.mail_server(sys.argv[0] + " executed", message)
-logging.info(message)
+    OpenLrw.pretty_message("Script finished", "Total number of results sent : " + str(COUNTER))
+
+    message = sys.argv[0] + " executed in " + measure_time() + "seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of results sent : " + str(COUNTER)
+
+    # OpenLrw.mail_server(sys.argv[0] + " executed", message)
+    logging.info(message)
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()

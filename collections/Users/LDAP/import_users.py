@@ -166,48 +166,55 @@ def add_new_users_only(jwt):
 
 
 # -------------- MAIN --------------
-
 try:
-    ldap.set_option(ldap.OPT_REFERRALS, 0)  # Don't follow referrals
-    # Ignores server side certificate errors (assumes using LDAPS and self-signed cert).
-    ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
-    l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
-    l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
-except ldap.LDAPError as e:
-    OpenLRW.pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
+    try:
+        ldap.set_option(ldap.OPT_REFERRALS, 0)  # Don't follow referrals
+        # Ignores server side certificate errors (assumes using LDAPS and self-signed cert).
+        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+        l = ldap.initialize(SETTINGS['ldap']['host'] + ':' + SETTINGS['ldap']['port'])
+        l.protocol_version = ldap.VERSION3  # Paged results only apply to LDAP v3
+    except ldap.LDAPError as e:
+        OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+        OpenLRW.pretty_error("Unable to contact to the LDAP host", "Check the settings.py file")
 
-try:
-    l.simple_bind_s(SETTINGS['ldap']['user'], SETTINGS['ldap']['password'])
-except ldap.LDAPError as e:
-    OpenLRW.pretty_error('LDAP bind failed', '%s' % e)
+    try:
+        l.simple_bind_s(SETTINGS['ldap']['user'], SETTINGS['ldap']['password'])
+    except ldap.LDAPError as e:
+        OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+        OpenLRW.pretty_error('LDAP bind failed', '%s' % e)
 
-jwt = OpenLrw.generate_jwt()
+    jwt = OpenLrw.generate_jwt()
 
-if option.reset is True:  # Delete evey users and insert them
-    users = OpenLrw.get_users(jwt)
-    if users:
-        data = json.loads(users)
-        for row in data:
-            try:
-                OpenLrw.delete_user(row['user']['sourcedId'], jwt)
-            except OpenLRWClientException:
-                jwt = OpenLrw.generate_jwt()
-                OpenLrw.delete_user(row['user']['sourcedId'], jwt)
+    if option.reset is True:  # Delete evey users and insert them
+        users = OpenLrw.get_users(jwt)
+        if users:
+            data = json.loads(users)
+            for row in data:
+                try:
+                    OpenLrw.delete_user(row['user']['sourcedId'], jwt)
+                except OpenLRWClientException:
+                    jwt = OpenLrw.generate_jwt()
+                    OpenLrw.delete_user(row['user']['sourcedId'], jwt)
+        else:
+            OpenLRW.pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
+
+        COUNTER = populate(False, jwt)
+    elif option.update is True:
+        COUNTER = add_new_users_only(jwt)
+    elif option.restore is True:
+        COUNTER = populate(True, jwt)
     else:
-        OpenLRW.pretty_error('Can\'t get a JWT', 'Getting a JWT returns a 401 HTTP Error !')
+        OpenLRW.pretty_error("Wrong usage", "Run --help for more information")
 
-    COUNTER = populate(False, jwt)
-elif option.update is True:
-    COUNTER = add_new_users_only(jwt)
-elif option.restore is True:
-    COUNTER = populate(True, jwt)
-else:
-    OpenLRW.pretty_error("Wrong usage", "Run --help for more information")
+    OpenLRW.pretty_message("Script finished", "Total number of users imported : " + str(COUNTER))
 
-OpenLRW.pretty_message("Script finished", "Total number of users imported : " + str(COUNTER))
+    message = str("LDAP Users imported (" + str(sys.argv[1]) + " method) in " + measure_time() + " seconds \n \n Total number of users imported : " + str(COUNTER))
 
-message = str("LDAP Users imported (" + str(sys.argv[1]) + " method) in " + measure_time() + " seconds \n \n Total number of users imported : " + str(COUNTER))
-
-OpenLrw.mail_server(str(sys.argv[0]) + " executed", message)
-logging.info(message)
-sys.exit(0)
+    # OpenLrw.mail_server(str(sys.argv[0]) + " executed", message)
+    logging.info(message)
+    sys.exit(0)
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()

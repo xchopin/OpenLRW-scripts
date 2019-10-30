@@ -271,28 +271,34 @@ if (args['last'] is False) and (args['update'] is False):
     OpenLRW.pretty_error("Wrong usage", ["This script requires an argument, please run --help to get more details"])
     exit()
 
-JWT = OpenLrw.generate_jwt()
-
-# Create a temporary class
 try:
-    response = requests.post(URI, headers={'Authorization': 'Bearer ' + JWT}, json={'sourcedId': 'unknown_apogee', 'title': 'Temporary Apogee class'})
-    if response == 500:
-        exit_log('Unable to create the Class "Apogée"', response)
-except requests.exceptions.ConnectionError as e:
-    exit_log('Unable to create the Class "Apogée"', e)
+    JWT = OpenLrw.generate_jwt()
+
+    # Create a temporary class
+    try:
+        response = requests.post(URI, headers={'Authorization': 'Bearer ' + JWT}, json={'sourcedId': 'unknown_apogee', 'title': 'Temporary Apogee class'})
+        if response == 500:
+            exit_log('Unable to create the Class "Apogée"', response)
+    except requests.exceptions.ConnectionError as e:
+        exit_log('Unable to create the Class "Apogée"', e)
 
 
-if args['last'] is True:
-    RESULT_COUNTER = import_last_results()
-elif args['update'] is True:
-    RESULT_COUNTER = update()
+    if args['last'] is True:
+        RESULT_COUNTER = import_last_results()
+    elif args['update'] is True:
+        RESULT_COUNTER = update()
 
 
-LINEITEM_COUNTER = 0
+    LINEITEM_COUNTER = 0
 
-OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER))
-message = "Script executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
-          + str(RESULT_COUNTER) + " results sent \n "
-OpenLrw.mail_server(sys.argv[0] + " executed", message)
-logging.info(message)
+    OpenLrw.pretty_message("Script finished", "Results sent: " + str(RESULT_COUNTER))
+    message = "Script executed in " + measure_time() + " seconds \n\n -------------- \n SUMMARY \n -------------- \n" \
+              + str(RESULT_COUNTER) + " results sent \n "
+    # OpenLrw.mail_server(sys.argv[0] + " executed", message)
+    logging.info(message)
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()
 

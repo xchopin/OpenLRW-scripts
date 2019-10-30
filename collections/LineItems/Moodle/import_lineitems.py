@@ -179,32 +179,38 @@ def import_other_module(cursor, mongolineitems):
     return counter
 
 
-# -------------- MAIN --------------
-paramMysql = {
-    'host' : DB_HOST,
-    'user' : DB_USERNAME,
-    'passwd' : DB_PASSWORD,
-    'db' : DB_NAME,
-    'charset' : 'utf8mb4'
-}
-db = MySQLdb.connect(**paramMysql)
-cursor = db.cursor()
-cursor.execute("SELECT itemmodule FROM mdl_grade_items WHERE itemmodule IS NOT NULL AND itemmodule != '' GROUP BY itemmodule;")
-modules = cursor.fetchall()
+try:
+    # -------------- MAIN --------------
+    paramMysql = {
+        'host': DB_HOST,
+        'user': DB_USERNAME,
+        'passwd': DB_PASSWORD,
+        'db': DB_NAME,
+        'charset': 'utf8mb4'
+    }
+    db = MySQLdb.connect(**paramMysql)
+    cursor = db.cursor()
+    cursor.execute("SELECT itemmodule FROM mdl_grade_items WHERE itemmodule IS NOT NULL AND itemmodule != '' GROUP BY itemmodule;")
+    modules = cursor.fetchall()
 
-mongo_lineitems = get_mongo_lineitems()
+    mongo_lineitems = get_mongo_lineitems()
 
-for module in modules:
-    module_name = module[0]
-    COUNTER += import_module(str(module_name), cursor, mongo_lineitems)
+    for module in modules:
+        module_name = module[0]
+        COUNTER += import_module(str(module_name), cursor, mongo_lineitems)
 
-COUNTER += import_other_module(cursor, mongo_lineitems)
+    COUNTER += import_other_module(cursor, mongo_lineitems)
 
-db.close()
+    db.close()
 
-OpenLRW.pretty_message("Script finished", "Total number of line items sent : " + str(COUNTER))
+    OpenLRW.pretty_message("Script finished", "Total number of line items sent : " + str(COUNTER))
 
-message = str(sys.argv[0]) + " finished its execution in " + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items sent : " + str(COUNTER)
+    message = str(sys.argv[0]) + " finished its execution in " + measure_time() + " seconds\n\n -------------- \n SUMMARY \n -------------- \n" + "Total number of line items sent : " + str(COUNTER)
 
-OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
-logging.info(message)
+    # OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
+    logging.info(message)
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
+    exit()

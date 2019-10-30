@@ -132,17 +132,21 @@ def parse_file(filename):
 
     return counter
 
+try:
+    if args['last'] is True:
+        COUNTER = treat_last_files()
+    elif args['file'] is not None:
+        COUNTER = treat_last_files()
+    else:
+        OpenLrw.pretty_error("Wrong argument", "Please use --help for  ")
+        exit()
 
-if args['last'] is True:
-    COUNTER = treat_last_files()
-elif args['file'] is not None:
-    COUNTER = treat_last_files()
-else:
-    OpenLrw.pretty_error("Wrong argument", "Please use --help for  ")
+    time = measure_time()
+
+    # OpenLrw.mail_server(sys.argv[0] + " executed", str(COUNTER) + " users updated in " + measure_time() + " seconds")
+    logging.info(str(COUNTER) + " users updated in " + measure_time() + " seconds")
+except Exception as e:
+    print(repr(e))
+    OpenLrw.mail_server(str(sys.argv[0]) + ' error', repr(e))
+    logging.error(repr(e))
     exit()
-
-
-time = measure_time()
-
-OpenLrw.mail_server(sys.argv[0] + " executed", str(COUNTER) + " users updated in " + measure_time() + " seconds")
-logging.info(str(COUNTER) + " users updated in " + measure_time() + " seconds")
