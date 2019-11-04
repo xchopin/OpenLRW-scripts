@@ -228,9 +228,9 @@ def parse_results(filename, results):
             post_result(data, 'unknown_apogee', JWT)  # in any cases we have to send the result
             counter += 1
 
-    if is_file_corrupted is True:
-        message = str(filename) + ' is corrupted, check the log file for more details'
-        OpenLrw.mail_server("Apogée Result - CSV File corrupted", message)
+    # if is_file_corrupted is True:
+    #     message = str(filename) + ' is corrupted, check the log file for more details'
+    #     OpenLrw.mail_server("Apogée Result - CSV File corrupted", message)
 
     return counter
 
