@@ -279,7 +279,7 @@ try:
     message += " seconds \n\n -------------- \n SUMMARY \n -------------- \n Total number of events : "
     message += str(TOTAL_EVENT) + "\nCaliper Events sent: " + str(COUNTER_JSON_SENT)
 
-    OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
+    # OpenLrw.mail_server(str(sys.argv[0] + " executed"), message)
     logging.info(message)
 except Exception as e:
     print(repr(e))
