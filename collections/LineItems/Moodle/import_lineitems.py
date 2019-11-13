@@ -4,7 +4,7 @@
 __author__ = "Xavier Chopin"
 __copyright__ = "Copyright 2019, University of Lorraine"
 __license__ = "ECL-2.0"
-__version__ = "1.0.6"
+__version__ = "1.0.7"
 __email__ = "xavier.chopin@univ-lorraine.fr"
 __status__ = "Production"
 
@@ -108,7 +108,7 @@ def import_module(module, cursor, mongo_lineitems):
         # Check if LineItem already exists
         try:
             if mongo_lineitems[item_id]:
-                break
+                continue
         except KeyError:
             exist = False
 
@@ -154,7 +154,7 @@ def import_other_module(cursor, mongolineitems):
         # Check if LineItem already exists
         try:
             if mongo_lineitems[item_id]:
-                break
+                continue
         except KeyError:
             exist = False
 
