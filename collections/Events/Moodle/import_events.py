@@ -31,8 +31,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%
 
 
 parser = OpenLRW.parser
-parser.add_argument('-t', '--timestamps', action='store', help='Two timestamps(from & to) for querying Moodle`s database')
-parser.add_argument('-u', '--update', action='store_true', help='Import newer events than the last one stored in mongo.')
+parser.add_argument('-t', '--timestamps',  nargs='*', action='store', help='Two timestamps(from & to) for querying Moodle`s database')
+parser.add_argument('-u', '--update', action='store_true', help='Import newer events than the last one stored in Mongo.')
 args = vars(OpenLRW.enable_argparse())
 
 
