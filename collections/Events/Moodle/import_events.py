@@ -11,6 +11,8 @@ __status__ = "Production"
 import MySQLdb
 import datetime
 import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 import os
 import requests
 import re
@@ -206,7 +208,14 @@ try:
 
 
 
-    db = MySQLdb.connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME)
+    mysql_config = {
+        'host': DB_HOST,
+        'user': DB_USERNAME,
+        'passwd': DB_PASSWORD,
+        'db': DB_NAME,
+        'charset': 'utf8mb4'
+    }
+    db = MySQLdb.connect(**mysql_config)
     query = db.cursor()
 
     # Map Moodle user id to their CAS uid
