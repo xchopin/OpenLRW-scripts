@@ -83,9 +83,9 @@ def get_quiz_name(quiz_id):
     """
     name = "Deleted quiz"  # Default name
 
-    query.execute("SELECT name FROM arche_prod.mdl_quiz,arche_prod.mdl_quiz_attempts "
-                  "WHERE arche_prod.mdl_quiz.id = arche_prod.mdl_quiz_attempts.quiz "
-                  "AND arche_prod.mdl_quiz_attempts.id=" + str(quiz_id) + ";")
+    query.execute("SELECT name FROM mdl_quiz,mdl_quiz_attempts "
+                  "WHERE mdl_quiz.id = mdl_quiz_attempts.quiz "
+                  "AND mdl_quiz_attempts.id=" + str(quiz_id) + ";")
     res = query.fetchone()
 
     if res is not None:
